@@ -74,7 +74,7 @@ import com.leoaristocrat.semesta.core.utils.Textos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-private val BackupLocale = Locale.forLanguageTag("es")
+private val BackupLocale = Locale.ENGLISH
 
 /** Lo que se ha elegido restaurar, mientras se decide. */
 private data class PendingRestore(
@@ -586,4 +586,4 @@ private fun BackupButton(
 
 private fun formatBackupDate(millis: Long): String = Instant.ofEpochMilli(millis)
     .atZone(ZoneId.systemDefault())
-    .format(DateTimeFormatter.ofPattern("d 'de' MMMM, HH:mm", BackupLocale))
+    .format(DateTimeFormatter.ofPattern("MMM d, HH:mm", BackupLocale))

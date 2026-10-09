@@ -1,12 +1,13 @@
-# Fuentes empaquetadas
+# Bundled fonts
 
-Las familias de Apariencia › Tipografía que no son del sistema van en `app/src/main/res/font`
-como fuentes variables (un archivo por familia, eje `wght`), tomadas de
-<https://github.com/google/fonts> el 20 de septiembre de 2026. Todas están bajo la
-SIL Open Font License 1.1, que va abajo y tiene que acompañar a las fuentes allá donde se
-redistribuyan, el APK incluido: cuando exista la pantalla de licencias en Acerca de, esto va ahí.
+The non-system font families available in Appearance > Typography are bundled in
+`app/src/main/res/font` as variable fonts (one file per family, with a `wght` axis).
+They were sourced from <https://github.com/google/fonts> on September 20, 2026.
+All are distributed under the SIL Open Font License 1.1 reproduced below. The
+license must accompany redistributed fonts, including the APK. The app also
+includes these notices in its About > Licenses screen.
 
-| Archivo | Familia | Autores |
+| File | Family | Authors |
 | --- | --- | --- |
 | `inter.ttf` | Inter | The Inter Project Authors (https://github.com/rsms/inter) |
 | `manrope.ttf` | Manrope | The Manrope Project Authors (https://github.com/googlefonts/manrope) |
@@ -17,7 +18,7 @@ redistribuyan, el APK incluido: cuando exista la pantalla de licencias en Acerca
 | `lora.ttf` | Lora | The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic) |
 | `jetbrains_mono.ttf` | JetBrains Mono | The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono) |
 
-## SIL Open Font License, versión 1.1
+## SIL Open Font License, version 1.1
 
 ```
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

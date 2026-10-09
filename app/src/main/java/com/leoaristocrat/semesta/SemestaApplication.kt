@@ -15,6 +15,7 @@ import com.leoaristocrat.semesta.feature_user.domain.UserRepository
 import com.leoaristocrat.semesta.core.utils.Textos
 import dagger.hilt.android.HiltAndroidApp
 import java.io.File
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +53,7 @@ class SemestaApplication : Application(), Configuration.Provider {
         // Antes incluso de que Hilt inyecte: `super.onCreate()` construye los repositorios, y el
         // de actualizaciones crea su canal de avisos en el constructor, con nombre traducido.
         // Con esto despues, el primer `Textos.get` reventaba antes de tener proveedor.
+        Locale.setDefault(Locale.ENGLISH)
         Textos.desde(this)
         /*
          * El manejador se pone lo primero, para que un fallo durante el propio arranque —una

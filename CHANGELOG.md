@@ -1,5 +1,12 @@
 # Semesta changelog
 
+## [Unreleased]
+
+### Improvements
+- Ship English-only app resources, dates, notifications and release notes; normalize legacy language preferences while preserving other backup data.
+- Translate font documentation to FONTS.md and preserve all font authors and license text.
+- Remove GitHub Actions workflows and document manual signed builds and GitHub Releases.
+
 ## [1.0.0] - 2026-10-09
 
 ### Features

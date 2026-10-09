@@ -56,7 +56,7 @@ Database filenames, stored preference keys and the ZIP data member retain their 
 
 ## Documentation and attribution
 
-[Signed release verification](docs/RELEASE_VALIDATION.md) · [Validation](docs/VALIDATION.md) · [India-first product rules](docs/INDIA_EDUCATION.md) · [Project audit](docs/PROJECT_AUDIT.md) · [Configuration](docs/CONFIGURATION.md) · [Font attribution](FUENTES.md) · [Release notes](CHANGELOG.md)
+[Signed release verification](docs/RELEASE_VALIDATION.md) · [Validation](docs/VALIDATION.md) · [India-first product rules](docs/INDIA_EDUCATION.md) · [Project audit](docs/PROJECT_AUDIT.md) · [Configuration](docs/CONFIGURATION.md) · [Font attribution](FONTS.md) · [Release notes](CHANGELOG.md)
 
 Bundled fonts retain their license notices. Open-source library attribution remains available in the application’s Licenses screen. Third-party palettes retain their published names and attribution. First-party identity is Semesta / Sayeem Sadik / Leo Aristocrat; third-party work remains credited to its authors.
 

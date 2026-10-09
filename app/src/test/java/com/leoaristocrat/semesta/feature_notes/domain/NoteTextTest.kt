@@ -78,7 +78,7 @@ class NoteTextTest {
     /** Al preguntar «¿borrar esto?» hay que poder nombrarlo aunque no tenga primera linea. */
     @Test
     fun unaNotaSinTituloTieneNombreParaElDialogo() {
-        assertEquals("esta nota", NoteText.label("   "))
+        assertEquals("this note", NoteText.label("   "))
         assertEquals("Parcial 2", NoteText.label("Parcial 2\ny mas"))
     }
 }

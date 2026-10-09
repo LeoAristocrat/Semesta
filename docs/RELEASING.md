@@ -54,11 +54,15 @@ signed with this same release key can update it normally.
 
 ## Push the prepared source
 
-The remote already exists. Review `git status`, then push when ready:
+The remote already exists. Review and commit local changes, then push when ready:
 
 ```powershell
-git push -u origin main
-git push origin v1.0.0
+git config user.name "LeoAristocrat"
+git config user.email "sayeemlaskar786@gmail.com"
+git status
+git add -A
+git commit -m "chore: make Semesta English-only and remove GitHub Actions"
+git push origin main
 ```
 
 GitHub authentication is handled by your Git client. No credential is embedded in
@@ -67,35 +71,23 @@ emulators, logs, design prototypes, visual-review screenshots and one-time migra
 scripts are excluded from source commits. The prototypes and screenshots remain
 available locally in `designs/` and `docs/visual-review/`.
 
-## GitHub Actions
+## Manual releases only
 
-`Android checks` runs on pushes to `main` and pull requests. It builds the debug
-APK, runs unit tests, lint and design-token verification, and uploads reports.
-It has read-only repository permissions and requires no signing secrets.
-
-`Signed Android build` runs only through **Run workflow**, on `main`, using the
-`release-signing` environment. Configure that environment and its secrets before
-running it:
-
-| Secret | Value |
-|---|---|
-| `SEMESTA_KEYSTORE_BASE64` | Base64 encoding of the existing private keystore |
-| `RELEASE_STORE_PASSWORD` | Existing store password from local.properties |
-| `RELEASE_KEY_ALIAS` | `semesta` |
-| `RELEASE_KEY_PASSWORD` | Existing key password from local.properties |
-
-Use GitHub's secure secret settings; do not commit a Base64 key file. The workflow
-restores the key only in the runner's temporary directory, excludes it from uploaded
-artifacts and deletes it in cleanup. It uploads the signed APK, bundle, R8 mapping,
-signature verification and checksums. It does **not** publish a GitHub Release.
-It also checks that the APK uses the committed public certificate fingerprint,
-preventing an accidentally substituted CI key from producing an incompatible update.
-The workflows have been checked locally; their first hosted run happens after push.
+There are no GitHub Actions workflows in this repository. Builds, checks and release
+uploads are performed manually. No signing secrets need to be uploaded to GitHub.
+To disable the platform feature as well, open the repository's Settings > Actions >
+General, select Disable actions under Actions permissions, and save.
 
 ## Publish a release separately
 
-Create a GitHub Release for `v1.0.0` using the corresponding section in `CHANGELOG.md`.
-Attach the signed `Semesta-1.0.0.apk` and its checksum. The updater needs that actual
+For each new release, update `VERSION` and add its English notes to `CHANGELOG.md`. The version name determines an increasing Android
+version code automatically; keep any explicit override higher than the published code.
+Build and verify with the existing signing key, commit the changes, create a new annotated tag, and push that tag manually. Do not
+move a tag or replace artifacts for an already published release.
+
+In GitHub, open **Releases > Draft a new release**, choose the new tag and paste the
+corresponding English notes from `CHANGELOG.md`. Attach the matching signed APK and
+its checksum, then click **Publish release** when ready. The updater needs that actual
 release asset; an empty repository or a pushed tag alone provides no download.
 Store the bundle and mapping securely for Play Console/crash analysis as needed.
 
@@ -104,7 +96,6 @@ configuration and certificate fingerprints. Signed packaging does not configure
 those services. See [configuration](CONFIGURATION.md). Google Play distribution
 also requires completing the applicable Play Console setup and policy checks.
 
-For a later release, update `VERSION` and matching sections in `CHANGELOG.md` and
-`CHANGELOG.es.md`, build and verify, then create the release commit and annotated tag.
+For a later release, update `VERSION` and matching sections in `CHANGELOG.md`, build and verify, then create the release commit and annotated tag.
 Keep third-party font and library notices. No blanket open-source license for
 first-party code has been selected; choose one explicitly if granting reuse rights.

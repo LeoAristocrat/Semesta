@@ -45,8 +45,8 @@ class NoteGroupingTest {
 
     @Test
     fun losDosDiasQueSeMiranTienenNombrePropio() {
-        assertEquals("Hoy", NoteGrouping.dayLabel(hoy, hoy))
-        assertEquals("Ayer", NoteGrouping.dayLabel(hoy.minusDays(1), hoy))
+        assertEquals("Today", NoteGrouping.dayLabel(hoy, hoy))
+        assertEquals("Yesterday", NoteGrouping.dayLabel(hoy.minusDays(1), hoy))
     }
 
     /** Del mismo ano no hace falta decir el ano; de otro, si. */

@@ -4,17 +4,7 @@ import com.leoaristocrat.semesta.core.utils.Textos
 import java.io.File
 import java.util.Locale
 
-/**
- * [Textos] para las pruebas de JVM: lee los `strings.xml` del arbol de fuentes y resuelve por
- * el idioma de `Locale.getDefault()`.
- *
- * Sin esto, cualquier prueba que pase por dominio o ViewModel —que ahora piden sus textos a
- * recursos— caeria con «Textos sin proveedor». Y leyendo los XML de verdad, la prueba comprueba
- * de paso que la clave existe en los dos idiomas.
- *
- * El id numerico se traduce a nombre mirando `R.string` por reflexion: los ids son constantes
- * generadas al compilar y estan en la ruta de clases de las pruebas.
- */
+/** Resolves the shipped English XML resources for JVM tests without Android context. */
 object TextosDePrueba {
     private val nombres: Map<Int, String> by lazy {
         R.string::class.java.fields.associate { it.getInt(null) to it.name }
@@ -22,11 +12,11 @@ object TextosDePrueba {
     private val porIdioma = HashMap<String, Map<String, String>>()
 
     private fun tabla(idioma: String): Map<String, String> = porIdioma.getOrPut(idioma) {
-        val carpeta = when (idioma) { "es" -> "values-es"; "en" -> "values-en"; else -> "values" }
-        val raiz = generateSequence(File(System.getProperty("user.dir"))) { it.parentFile }
+        val carpeta = "values-en"
+        val raiz = generateSequence(File(System.getProperty("user.dir") ?: ".")) { it.parentFile }
             .map { File(it, "app/src/main/res") }
             .firstOrNull { it.isDirectory }
-            ?: File(System.getProperty("user.dir"), "src/main/res")
+            ?: File(System.getProperty("user.dir") ?: ".", "src/main/res")
         val xml = listOf("values", carpeta).distinct().flatMap { File(raiz, it).listFiles()?.filter { it.extension == "xml" } ?: emptyList() }
             .joinToString("\n") { it.readText(Charsets.UTF_8) }
         Regex("""<string\s+[^>]*?name="([^"]+)"[^>]*?>(.*?)</string>""", RegexOption.DOT_MATCHES_ALL)
@@ -48,11 +38,11 @@ object TextosDePrueba {
     }
 
     private fun listas(idioma: String): Map<String, List<String>> {
-        val carpeta = when (idioma) { "es" -> "values-es"; "en" -> "values-en"; else -> "values" }
-        val raiz = generateSequence(File(System.getProperty("user.dir"))) { it.parentFile }
+        val carpeta = "values-en"
+        val raiz = generateSequence(File(System.getProperty("user.dir") ?: ".")) { it.parentFile }
             .map { File(it, "app/src/main/res") }
             .firstOrNull { it.isDirectory }
-            ?: File(System.getProperty("user.dir"), "src/main/res")
+            ?: File(System.getProperty("user.dir") ?: ".", "src/main/res")
         val xml = listOf("values", carpeta).distinct().flatMap { File(raiz, it).listFiles()?.filter { it.extension == "xml" } ?: emptyList() }
             .joinToString("\n") { it.readText(Charsets.UTF_8) }
         return Regex("""<string-array name="([^"]+)">(.*?)</string-array>""", RegexOption.DOT_MATCHES_ALL)
@@ -65,15 +55,15 @@ object TextosDePrueba {
     fun instalar() {
         Textos.proveedorDeListas = { id ->
             val nombre = nombresDeListas[id] ?: error("no hay lista con id $id")
-            listas(Locale.getDefault().language)[nombre] ?: listas("es")[nombre] ?: error("falta la lista «$nombre»")
+            listas("en")[nombre] ?: error("falta la lista «$nombre»")
         }
         Textos.proveedor = { id, args ->
             val nombre = nombres[id] ?: error("no hay recurso con id $id")
-            val idioma = Locale.getDefault().language
+            val idioma = "en"
             val plantilla = tabla(idioma)[nombre]
-                ?: tabla("es")[nombre]
+                ?: tabla("en")[nombre]
                 ?: error("falta la cadena «$nombre» en strings.xml")
-            if (args.isEmpty()) plantilla else String.format(Locale.getDefault(), plantilla, *args)
+            if (args.isEmpty()) plantilla else String.format(Locale.ENGLISH, plantilla, *args)
         }
     }
 }

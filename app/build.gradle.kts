@@ -411,10 +411,6 @@ abstract class CopyChangelogAsset : DefaultTask() {
     @get:InputFile
     abstract val changelog: RegularFileProperty
 
-    @get:InputFile
-    @get:Optional
-    abstract val changelogEs: RegularFileProperty
-
     @get:OutputDirectory
     abstract val outputDirectory: DirectoryProperty
 
@@ -445,9 +441,7 @@ abstract class CopyChangelogAsset : DefaultTask() {
         val filtered = filterChangelog(changelog.get().asFile)
         // Keep the existing localized asset names while making English canonical.
         File(target, "changelog_en.md").writeText(filtered.joinToString(System.lineSeparator()))
-        val esFile = changelogEs.orNull?.asFile
-        val spanish = if (esFile != null && esFile.exists()) filterChangelog(esFile) else filtered
-        File(target, "changelog.md").writeText(spanish.joinToString(System.lineSeparator()))
+        File(target, "changelog.md").writeText(filtered.joinToString(System.lineSeparator()))
     }
 }
 
@@ -457,7 +451,6 @@ androidComponents {
             "copyChangelogAsset${variant.name.replaceFirstChar { it.uppercase() }}"
         ) {
             changelog.set(rootProject.file("CHANGELOG.md"))
-            changelogEs.set(rootProject.file("CHANGELOG.es.md"))
         }
         variant.sources.assets?.addGeneratedSourceDirectory(
             copyTask,
@@ -678,7 +671,7 @@ fun changelogSectionForBuild(versionName: String): String? {
     val lines = file.readLines()
     // Una versión publicada tiene su propia sección; un dev todavía no, y lo suyo está en
     // «Sin publicar», que es lo que ese APK lleva dentro.
-    val heading = listOf("## [$versionName]", "## [Sin publicar]")
+    val heading = listOf("## [$versionName]", "## [Unreleased]")
         .firstOrNull { candidate -> lines.any { it.trimStart().startsWith(candidate) } }
         ?: return null
     val start = lines.indexOfFirst { it.trimStart().startsWith(heading) }
@@ -878,15 +871,7 @@ fun changelogBodyFor(versionName: String): String {
     if (enBody.isBlank()) {
         throw GradleException("CHANGELOG.md has no release notes for $versionName.")
     }
-    val esBody = extractBody(rootProject.file("CHANGELOG.es.md"), versionName)
-    return if (esBody.isNotBlank()) {
-        enBody.unwrapMarkdownLines() + System.lineSeparator() + System.lineSeparator() +
-            "---" + System.lineSeparator() + System.lineSeparator() +
-            "### Español" + System.lineSeparator() + System.lineSeparator() +
-            esBody.unwrapMarkdownLines()
-    } else {
-        enBody.unwrapMarkdownLines()
-    }
+    return enBody.unwrapMarkdownLines()
 }
 
 /**
@@ -1058,7 +1043,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 tasks.withType<Test>().configureEach {
-    systemProperty("user.language", "es")
-    systemProperty("user.country", "ES")
+    systemProperty("user.language", "en")
+    systemProperty("user.country", "IN")
 }
 

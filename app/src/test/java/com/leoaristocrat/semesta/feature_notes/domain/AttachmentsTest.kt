@@ -1,5 +1,7 @@
 package com.leoaristocrat.semesta.feature_notes.domain
 
+import com.leoaristocrat.semesta.TextosDePrueba
+import org.junit.Before
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -10,6 +12,11 @@ import org.junit.Test
  * simplemente dice «0 KB» debajo de una foto de tres megas.
  */
 class AttachmentsTest {
+
+    @Before
+    fun initializeEnglishResources() {
+        TextosDePrueba.instalar()
+    }
 
     @Test
     fun elTipoSaleDelMimeYNoDeQuienLoEligio() {
@@ -38,7 +45,7 @@ class AttachmentsTest {
         assertEquals("512 B", Attachments.formatSize(512))
         assertEquals("2 KB", Attachments.formatSize(2048))
         assertEquals("840 KB", Attachments.formatSize(840 * 1024))
-        assertEquals("1,5 MB", Attachments.formatSize((1.5 * 1024 * 1024).toLong()))
+        assertEquals("1.5 MB", Attachments.formatSize((1.5 * 1024 * 1024).toLong()))
     }
 
     @Test
@@ -76,8 +83,8 @@ class AttachmentsTest {
 
     @Test
     fun loQueLlegaSinNombreRecibeUnoQueSeEntiende() {
-        assertEquals("Foto", Attachments.fallbackName(AttachmentKind.IMAGE, 0))
-        assertEquals("Grabación", Attachments.fallbackName(AttachmentKind.AUDIO, 0))
-        assertEquals("Archivo", Attachments.fallbackName(AttachmentKind.FILE, 0))
+        assertEquals("Photo", Attachments.fallbackName(AttachmentKind.IMAGE, 0))
+        assertEquals("Recording", Attachments.fallbackName(AttachmentKind.AUDIO, 0))
+        assertEquals("File", Attachments.fallbackName(AttachmentKind.FILE, 0))
     }
 }

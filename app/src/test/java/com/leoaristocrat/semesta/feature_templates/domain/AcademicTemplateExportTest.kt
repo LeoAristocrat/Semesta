@@ -19,11 +19,11 @@ class AcademicTemplateExportTest {
 
         assertTrue(exported.contains(template.title))
         assertTrue(exported.contains("Checklist"))
-        assertTrue(exported.contains("[x] Tema delimitado"))
-        assertTrue(exported.contains("[ ] Fuentes revisadas"))
-        assertTrue(exported.contains("Estructura"))
-        assertTrue(exported.contains("APA básico"))
-        assertTrue(exported.contains("Referencias APA"))
+        assertTrue(exported.contains("[x] Defined Topic"))
+        assertTrue(exported.contains("[ ] Reviewed Sources"))
+        assertTrue(exported.contains("Structure"))
+        assertTrue(exported.contains("APA basics"))
+        assertTrue(exported.contains("APA references"))
     }
 
     @Test

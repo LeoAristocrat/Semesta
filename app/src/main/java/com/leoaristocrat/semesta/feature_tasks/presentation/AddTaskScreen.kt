@@ -881,7 +881,7 @@ private fun FormSection(
 @Composable
 private fun SectionTitle(text: String) {
     Text(
-        text = text.uppercase(Locale.forLanguageTag("es")),
+        text = text.uppercase(Locale.ENGLISH),
         color = MaterialTheme.colorScheme.primary,
         style = SectionLabelStyle,
         modifier = Modifier.padding(start = 4.dp)

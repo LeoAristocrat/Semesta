@@ -49,11 +49,11 @@ class TaskDateUtilsTest {
     fun `due text describes near dates`() {
         val today = LocalDate.of(2026, 5, 12)
 
-        assertEquals("venció ayer", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.minusDays(1)), today))
-        assertEquals("vence hoy", TaskDateUtils.dueText(TaskDateUtils.toMillis(today), today))
-        assertEquals("vence mañana", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.plusDays(1)), today))
-        assertEquals("vence en 3 días", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.plusDays(3)), today))
-        assertEquals("venció hace 2 días", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.minusDays(2)), today))
+        assertEquals("overdue yesterday", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.minusDays(1)), today))
+        assertEquals("due today", TaskDateUtils.dueText(TaskDateUtils.toMillis(today), today))
+        assertEquals("due tomorrow", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.plusDays(1)), today))
+        assertEquals("due in 3 days", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.plusDays(3)), today))
+        assertEquals("overdue 2 days ago", TaskDateUtils.dueText(TaskDateUtils.toMillis(today.minusDays(2)), today))
     }
 
     @Test
@@ -61,7 +61,7 @@ class TaskDateUtilsTest {
         val today = LocalDate.of(2026, 5, 12)
 
         assertEquals(
-            "vence mañana 09:15",
+            "due tomorrow 09:15",
             TaskDateUtils.dueText(TaskDateUtils.toMillis(today.plusDays(1), LocalTime.of(9, 15)), today)
         )
     }

@@ -1,5 +1,10 @@
 # Semesta 1.0.0 signed release — 9 October 2026
 
+This is the historical validation record for the original 1.0.0 artifacts. The
+subsequent English-only source cleanup removes Spanish resources and GitHub Actions;
+it does not change those artifact hashes. Rebuild a new version to distribute the
+cleanup. See [manual release instructions](RELEASING.md).
+
 Visual-review screenshots are retained locally under `docs/visual-review/` and excluded from Git. Capture paths below identify local evidence; a fresh clone does not contain those images.
 
 Release identity: `com.leoaristocrat.semesta`, version `1.0.0`, version code
@@ -89,8 +94,7 @@ complete ZIP backup before uninstalling it; Android rejects different certificat
 
 The confirmed public repository is `LeoAristocrat/Semesta`. Source preparation is
 local: no commits/tags or release assets have been pushed, no GitHub Release has
-been published, and no signing secrets have been uploaded. Hosted Actions runs
-remain to be verified after push. See [release instructions](RELEASING.md).
+been published, and no signing secrets have been uploaded. GitHub Actions workflows have since been removed; future releases are manual. See [release instructions](RELEASING.md).
 
 Google authentication/cloud backup require owner-supplied Firebase/OAuth setup and
 have not been verified against a live backend. Notification permission was tested;

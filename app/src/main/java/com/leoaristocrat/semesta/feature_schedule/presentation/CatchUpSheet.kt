@@ -69,11 +69,7 @@ import java.util.Locale
  * fuiste. Un «2 sept» en gris de once puntos no le dice nada a nadie.
  */
 private val DiaEntero: DateTimeFormatter
-    get() = if (Locale.getDefault().language == "en") {
-        DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.ENGLISH)
-    } else {
-        DateTimeFormatter.ofPattern("EEEE d 'de' MMMM", Locale.forLanguageTag("es"))
-    }
+    get() = DateTimeFormatter.ofPattern("EEEE, MMMM d", Locale.ENGLISH)
 
 private fun LocalDate.diaEntero(): String = format(DiaEntero).replaceFirstChar { it.titlecase(Locale.getDefault()) }
 
@@ -82,11 +78,7 @@ private fun hora(minuto: Int, en24: Boolean): String {
     val m = minuto % 60
     if (en24) return "%02d:%02d".format(h, m)
     val h12 = (h % 12).takeIf { it != 0 } ?: 12
-    val sufijo = if (Locale.getDefault().language == "en") {
-        if (h < 12) "AM" else "PM"
-    } else {
-        if (h < 12) "a. m." else "p. m."
-    }
+    val sufijo = if (h < 12) "AM" else "PM"
     return "%d:%02d %s".format(h12, m, sufijo)
 }
 

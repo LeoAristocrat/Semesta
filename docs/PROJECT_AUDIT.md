@@ -41,7 +41,7 @@ Migrate package declarations, namespace, application ID, application/theme/entry
 
 Changing application ID creates a separate Android sandbox. Existing users must export a complete local backup from the previous installation and import it into Semesta, including attachments. Automatic access to another app's private data is unavailable. Keep the database filename, preference storage names and old ZIP data member as internal compatibility identifiers; document any remaining legacy strings.
 
-English resources become the default fallback; retain Spanish in values-es, resource IDs and localization architecture. Do not translate data or change dates/grade scales silently.
+English resources are the only shipped language. Retain resource IDs and localization architecture; normalize legacy language preferences to English. Do not translate data or change dates/grade scales silently.
 
 ## Fragile areas / validation
 

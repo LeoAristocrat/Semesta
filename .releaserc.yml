@@ -4,8 +4,6 @@ changelog:
   files:
     - path: CHANGELOG.md
       lang: en
-    - path: CHANGELOG.es.md
-      lang: es
 commit:
   message: "chore: release v{version}"
 tag:

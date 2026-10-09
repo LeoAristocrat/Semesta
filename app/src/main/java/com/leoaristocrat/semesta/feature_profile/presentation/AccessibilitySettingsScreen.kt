@@ -36,7 +36,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material.icons.rounded.Spellcheck
 import androidx.compose.material.icons.rounded.StayCurrentPortrait
-import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -85,7 +84,6 @@ import com.leoaristocrat.semesta.core.design.components.duracionDeDeshacer
 import com.leoaristocrat.semesta.core.design.theme.LocalInterfaceSpacing
 import com.leoaristocrat.semesta.core.design.theme.LocalSectionColors
 import com.leoaristocrat.semesta.core.design.theme.scrollBottomRoom
-import com.leoaristocrat.semesta.feature_user.domain.AppLanguage
 import com.leoaristocrat.semesta.feature_user.domain.ColorBlindPalette
 import com.leoaristocrat.semesta.feature_user.domain.ContrastLevel
 import com.leoaristocrat.semesta.feature_user.domain.CurrencyPreference
@@ -117,7 +115,6 @@ fun AccessibilitySettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var testSnackbarJob by remember { mutableStateOf<Job?>(null) }
-    var showLanguageDialog by remember { mutableStateOf(false) }
     var showDateFormatDialog by remember { mutableStateOf(false) }
     var pendingDateFormat by remember { mutableStateOf<DateFormatPreference?>(null) }
     var showCurrencyDialog by remember { mutableStateOf(false) }
@@ -365,20 +362,7 @@ fun AccessibilitySettingsScreen(
 
             // ------------------------------------------------------------------ FORMATOS E IDIOMA
             item {
-                SettingsGroup(label = stringResource(R.string.a11y_section_formats), rowCount = 4) {
-                    val langLabel = when (a11y.appLanguage) {
-                        AppLanguage.SYSTEM -> stringResource(R.string.a11y_lang_system)
-                        AppLanguage.SPANISH -> stringResource(R.string.a11y_lang_spanish)
-                        AppLanguage.ENGLISH -> stringResource(R.string.a11y_lang_english)
-                    }
-                    SettingsRow(
-                        icon = Icons.Rounded.Translate,
-                        title = stringResource(R.string.a11y_language_title),
-                        subtitle = langLabel,
-                        iconColor = tonosDeAjustes.cian,
-                        onClick = { showLanguageDialog = true }
-                    )
-
+                SettingsGroup(label = stringResource(R.string.a11y_section_formats), rowCount = 3) {
                     SettingsToggleRow(
                         icon = Icons.Rounded.AccessTime,
                         title = stringResource(R.string.a11y_time_format_title),
@@ -446,22 +430,6 @@ fun AccessibilitySettingsScreen(
                 }
             }
         }
-    }
-
-    val context = androidx.compose.ui.platform.LocalContext.current
-    if (showLanguageDialog) {
-        LanguageSelectionDialog(
-            current = a11y.appLanguage,
-            onSelect = { selected ->
-                if (selected != a11y.appLanguage) {
-                    viewModel.updateAccessibility { it.copy(appLanguage = selected) }
-                    com.leoaristocrat.semesta.core.utils.LocaleHelper.persistLanguage(context, selected)
-                    (context as? android.app.Activity)?.recreate()
-                }
-                showLanguageDialog = false
-            },
-            onDismiss = { showLanguageDialog = false }
-        )
     }
 
     if (showDateFormatDialog) {
@@ -694,72 +662,6 @@ private fun MuestraDePaleta(paleta: ColorBlindPalette) {
             }
         }
     }
-}
-
-@Composable
-private fun LanguageSelectionDialog(
-    current: AppLanguage,
-    onSelect: (AppLanguage) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.a11y_language_title),
-                style = MaterialTheme.typography.titleLargeEmphasized
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                AppLanguage.entries.forEach { idioma ->
-                    val (title, subtitle) = when (idioma) {
-                        AppLanguage.SYSTEM -> Pair(
-                            stringResource(R.string.a11y_lang_system),
-                            stringResource(R.string.a11y_lang_system_desc)
-                        )
-                        AppLanguage.SPANISH -> Pair(
-                            stringResource(R.string.a11y_lang_spanish),
-                            stringResource(R.string.a11y_lang_spanish_desc)
-                        )
-                        AppLanguage.ENGLISH -> Pair(
-                            stringResource(R.string.a11y_lang_english),
-                            stringResource(R.string.a11y_lang_english_desc)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .cleanClickable { onSelect(idioma) }
-                            .padding(vertical = 10.dp, horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        RadioButton(
-                            selected = current == idioma,
-                            onClick = { onSelect(idioma) }
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.titleSmallEmphasized
-                            )
-                            Text(
-                                text = subtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_close))
-            }
-        }
-    )
 }
 
 @Composable

@@ -41,8 +41,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private val Espanol: Locale = Locale.forLanguageTag("es")
-private val Corta = DateTimeFormatter.ofPattern("d MMM yyyy", Espanol)
+private val EnglishLocale: Locale = Locale.ENGLISH
+private val Corta = DateTimeFormatter.ofPattern("d MMM yyyy", EnglishLocale)
 
 /**
  * Los días en que no hubo clase para nadie.

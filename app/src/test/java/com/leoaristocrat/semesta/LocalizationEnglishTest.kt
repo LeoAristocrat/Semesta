@@ -68,7 +68,7 @@ class LocalizationEnglishTest {
     fun academicTemplateExportInEnglish() {
         val template = AcademicTemplateLibrary.essayTemplates.first()
         val exported = template.exportText(completedChecklistIds = listOf("topic"))
-        assertTrue(exported.contains("Structure") || exported.contains("Estructura"))
+        assertTrue(exported.contains("Structure"))
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.leoaristocrat.semesta.feature_user.domain.MotionPreferences
 import com.leoaristocrat.semesta.feature_user.domain.SavedGradeScenario
 import com.leoaristocrat.semesta.feature_user.domain.SettingsIconColor
 import com.leoaristocrat.semesta.feature_user.domain.SettingsIconStyle
+import com.leoaristocrat.semesta.feature_user.domain.AppLanguage
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -165,7 +166,7 @@ object AppearancePreferencesJson {
 object AccessibilityPreferencesJson {
 
     fun encode(value: AccessibilityPreferences): JSONObject = JSONObject()
-        .put("appLanguage", value.appLanguage.name)
+        .put("appLanguage", AppLanguage.ENGLISH.name)
         .put("highContrastEnabled", value.highContrastEnabled)
         .put("use24HourTime", value.use24HourTime)
         .put("textScale", value.textScale.name)
@@ -188,7 +189,7 @@ object AccessibilityPreferencesJson {
         .put("currency", value.currency.name)
 
     fun decode(json: JSONObject, base: AccessibilityPreferences): AccessibilityPreferences = AccessibilityPreferences(
-        appLanguage = json.enumOr("appLanguage", base.appLanguage),
+        appLanguage = AppLanguage.ENGLISH,
         highContrastEnabled = json.optBoolean("highContrastEnabled", base.highContrastEnabled),
         use24HourTime = json.optBoolean("use24HourTime", base.use24HourTime),
         textScale = json.enumOr("textScale", base.textScale),

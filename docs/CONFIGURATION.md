@@ -10,7 +10,7 @@ Set `googleWebClientId` in untracked `local.properties` to the corresponding **w
 
 Cloud backup uses Firestore and the existing local JSON format. The current document path is `users/{uid}/backups/current`; access must be scoped to the authenticated account’s UID. Do not expose all backups through public rules. Binary attachments are not uploaded by this repository; use complete local ZIP backups for them. Migrating to a different Firebase project does not transfer existing Firebase users or cloud documents automatically. Preserve an offline complete backup first and migrate ownership/data using the service’s supported tools.
 
-Configuration files and credentials belong in ignored local files or CI secret storage. Do not commit private keys, service-account files, tokens or signing passwords. Client Firebase configuration is not a substitute for restrictive service rules.
+Configuration files and credentials belong in ignored local files. Do not commit private keys, service-account files, tokens or signing passwords. Client Firebase configuration is not a substitute for restrictive service rules.
 
 ## Update repository
 
@@ -20,7 +20,7 @@ The confirmed repository slug `LeoAristocrat/Semesta` is configured in `gradle.p
 - Environment variable `SEMESTA_REPOSITORY`.
 - Command property `-PsemestaRepository=LeoAristocrat/<actual-repository>`.
 
-The slug must belong to `LeoAristocrat`. The remote repository exists; publishing its APK releases is a separate action. The updater retains channel parsing, download handling, package identity and signing-certificate checks. Publishing requires the configured repository, release signing and `GITHUB_TOKEN`. No old release infrastructure is used by default. Do not substitute a literal placeholder into a production build.
+The slug must belong to `LeoAristocrat`. The remote repository exists; publishing its APK releases is a separate action. The updater retains channel parsing, download handling, package identity and signing-certificate checks. Publish signed APK assets manually through GitHub Releases. This flow needs no repository token or GitHub Actions signing secrets. No old release infrastructure is used by default. Do not substitute a literal placeholder into a production build.
 
 The new identity cannot install as an in-place update over a different package. After the first Semesta release, retain the same signing key for subsequent APK updates.
 
@@ -41,10 +41,10 @@ Release assembly and bundling reject missing signing configuration, default deve
 
 Room schema remains version 25 and its migration chain is preserved. The database filename and preference storage identifiers remain compatible with exported data. Complete ZIP archives continue to accept the legacy JSON entry name. New export filenames identify as Semesta.
 
-New appearance fields are optional on read. Older backups gain safe defaults for dynamic color and surface appearance; existing theme selections remain valid, including the alias for the former default theme. English is the default resource fallback; Spanish remains in `values-es`.
+New appearance fields are optional on read. Older backups gain safe defaults for dynamic color and surface appearance; existing theme selections remain valid, including the alias for the former default theme. Semesta ships English resources only. Legacy SYSTEM/SPANISH language preferences normalize to English without changing other saved settings. Serialized legacy identifiers remain readable for backup compatibility.
 
 ## Integrations requiring device verification
 
 Verify configured Google authentication/Firestore against your project, notification permission and scheduled reminders on representative devices, APK downloads with a release signed by your key, and file/photo/audio imports through Android’s system pickers. These cannot be proven by a JVM build alone.
 
-Local build and GitHub Actions instructions are in [releasing](RELEASING.md). Signing certificate fingerprints are public; passwords and private key material must remain local or in CI secret storage.
+Manual build and release instructions are in [releasing](RELEASING.md). Signing certificate fingerprints are public; passwords and private key material must remain local.

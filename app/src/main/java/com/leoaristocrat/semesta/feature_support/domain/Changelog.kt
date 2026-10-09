@@ -25,7 +25,8 @@ fun parseChangelog(markdown: String): List<ChangelogSection> {
     return starts.mapIndexedNotNull { order, start ->
         val match = HEADING.find(lines[start].trim()) ?: return@mapIndexedNotNull null
         val version = match.groupValues[1].trim()
-        if (version.equals("Sin publicar", ignoreCase = true)) return@mapIndexedNotNull null
+        if (version.equals("Unreleased", ignoreCase = true) ||
+            version.equals("Sin publicar", ignoreCase = true)) return@mapIndexedNotNull null
         val end = starts.getOrNull(order + 1) ?: lines.size
         val body = lines.subList(start + 1, end)
             .joinToString("\n")

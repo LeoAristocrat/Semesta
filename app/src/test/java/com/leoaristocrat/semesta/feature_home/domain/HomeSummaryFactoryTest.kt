@@ -51,7 +51,7 @@ class HomeSummaryFactoryTest {
         )
 
         assertEquals("Laura", summary.userName)
-        assertEquals("Crea tus materias para ver un tablero real del semestre.", summary.dashboardMessage)
+        assertEquals("Create your subjects to see a real semester dashboard.", summary.dashboardMessage)
         assertNull(summary.generalAverage)
     }
 
@@ -80,13 +80,13 @@ class HomeSummaryFactoryTest {
         )
 
         assertEquals(1, summary.overdueTasks)
-        assertTrue(summary.dashboardMessage.contains("vencida"))
+        assertTrue(summary.dashboardMessage.contains("overdue"))
         assertEquals(HomePriorityAction.TASKS, summary.priority.action)
-        assertTrue(summary.priority.title.contains("vencida"))
+        assertTrue(summary.priority.title.contains("overdue"))
         assertEquals(HomePriorityAction.TASKS, summary.dailyFocusItems.first().action)
-        assertEquals("Ahora", summary.dailyFocusItems.first().slotLabel)
+        assertEquals("Now", summary.dailyFocusItems.first().slotLabel)
         assertEquals("Matemáticas", summary.riskSubject?.subjectName)
-        assertEquals("Promedio bajo la nota mínima: 2.5.", summary.riskSubject?.detail)
+        assertEquals("Average below passing grade: 2.5.", summary.riskSubject?.detail)
     }
 
     @Test
@@ -106,7 +106,7 @@ class HomeSummaryFactoryTest {
         )
 
         assertEquals(HomePriorityAction.EXPENSES, summary.priority.action)
-        assertEquals("Gastos cerca del límite", summary.priority.title)
+        assertEquals("Expenses near limit", summary.priority.title)
     }
 
     @Test

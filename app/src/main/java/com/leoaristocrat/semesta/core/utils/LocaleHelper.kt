@@ -5,55 +5,25 @@ import android.content.res.Configuration
 import com.leoaristocrat.semesta.feature_user.domain.AppLanguage
 import java.util.Locale
 
+/** English is the product language, including when restoring older language preferences. */
 object LocaleHelper {
     private const val PREFS_NAME = "app_locale_preferences"
     private const val KEY_LANGUAGE = "app_language"
 
-    /**
-     * Obtiene el idioma persistido para inicializar el contexto de la Activity antes
-     * de que el DataStore asíncrono esté listo. Si ocurre cualquier fallo o no hay
-     * preferencia guardada, devuelve AppLanguage.SYSTEM de forma segura.
-     */
-    fun getPersistedLanguage(context: Context): AppLanguage {
-        return runCatching {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val name = prefs.getString(KEY_LANGUAGE, AppLanguage.SYSTEM.name)
-            name?.let { AppLanguage.valueOf(it) } ?: AppLanguage.SYSTEM
-        }.getOrDefault(AppLanguage.SYSTEM)
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun getPersistedLanguage(context: Context): AppLanguage = AppLanguage.ENGLISH
 
-    /**
-     * Persiste el idioma seleccionado en SharedPreferences síncronas.
-     */
+    @Suppress("UNUSED_PARAMETER")
     fun persistLanguage(context: Context, language: AppLanguage) {
-        runCatching {
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .edit()
-                .putString(KEY_LANGUAGE, language.name)
-                .apply()
-        }
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(KEY_LANGUAGE, AppLanguage.ENGLISH.name).apply()
     }
 
-    /**
-     * Aplica la configuración de idioma a un contexto base de Activity.
-     * Si la preferencia es SYSTEM, se conserva la configuración del sistema operativo sin alterarla.
-     */
+    @Suppress("UNUSED_PARAMETER")
     fun applyLocale(context: Context, language: AppLanguage = getPersistedLanguage(context)): Context {
-        if (language == AppLanguage.SYSTEM) {
-            return context
-        }
-
-        return runCatching {
-            val targetLocale = when (language) {
-                AppLanguage.SPANISH -> Locale.forLanguageTag("es")
-                AppLanguage.ENGLISH -> Locale.forLanguageTag("en")
-                AppLanguage.SYSTEM -> return context
-            }
-            Locale.setDefault(targetLocale)
-
-            val configuration = Configuration(context.resources.configuration)
-            configuration.setLocale(targetLocale)
-            context.createConfigurationContext(configuration)
-        }.getOrDefault(context)
+        Locale.setDefault(Locale.ENGLISH)
+        val configuration = Configuration(context.resources.configuration)
+        configuration.setLocale(Locale.ENGLISH)
+        return context.createConfigurationContext(configuration)
     }
 }

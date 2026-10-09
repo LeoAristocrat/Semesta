@@ -31,10 +31,9 @@
     <string name="a11y_subtitle">Vision, interaction, assistance and system</string>
     <string name="a11y_section_vision">VISION AND READING</string>
     <string name="a11y_section_interaction">INTERACTION AND CONTROL</string>
-    <string name="a11y_section_formats">FORMATS AND LANGUAGE</string>
+    <string name="a11y_section_formats">FORMATS</string>
     <string name="a11y_section_system">ASSISTANCE AND SYSTEM</string>
 
-    <string name="a11y_language_title">Application language</string>
     <string name="a11y_time_format_title">24-hour clock</string>
     <string name="a11y_time_format_24">24h format (e.g. 14:30)</string>
     <string name="a11y_time_format_12">12h format (e.g. 2:30 PM)</string>
@@ -89,12 +88,11 @@
     <string name="a11y_keep_screen_on_title">Keep screen on</string>
     <string name="a11y_keep_screen_on_subtitle">Prevents screen sleep while studying with a note open</string>
 
-    <string name="a11y_lang_system">System default</string>
-    <string name="a11y_lang_system_desc">Follows your device language</string>
-    <string name="a11y_lang_spanish">Spanish</string>
-    <string name="a11y_lang_spanish_desc">Spanish</string>
-    <string name="a11y_lang_english">English</string>
-    <string name="a11y_lang_english_desc">English</string>
+
+
+
+
+
     <string name="a11y_currency_preview_sample">Sample: %1$s · Symbol: %2$s</string>
     <string name="a11y_date_preview_sample">Sample: %1$s (%2$s)</string>
 
@@ -680,7 +678,7 @@
     <string name="tasks_create_new_subject">Create new subject</string>
     <string name="tasks_snackbar_undo">Undo</string>
 
-    <!-- Rediseño de Tareas (Propuesta D) -->
+    <!-- Task screen design -->
     <string name="tasks_hero_this_week">THIS WEEK</string>
     <string name="tasks_hero_to_do">to do</string>
     <string name="tasks_hero_overdue_singular">%1$d overdue task still pending</string>
@@ -1928,7 +1926,7 @@ your course catalog.</string>
     <string name="schedule_overlap_one">Two classes overlap on this day</string>
     <string name="schedule_overlap_many">There are %1$d schedule clashes on this day</string>
 
-    <!-- Sacadas del codigo: antes eran ramas if (isEnglish) en Kotlin -->
+    <!-- Resource strings extracted from Kotlin -->
     <string name="home_crear_primera_materia">Create first subject</string>
     <string name="home_activa_notas_tareas_y_prioridades_reales">Enables grades, tasks, and real priorities.</string>
     <string name="home_repaso_breve">Quick review</string>
@@ -2159,7 +2157,7 @@ your course catalog.</string>
     <string name="works_titulo_pendiente">Title pending.</string>
     <string name="works_s_f">n.d.</string>
 
-    <!-- Avisos y actualizaciones: salian siempre en espanol -->
+    <!-- Notifications and updates -->
     <string name="notif_sub_task">Task</string>
     <string name="notif_overdue_title">Overdue: %1$s</string>
     <string name="notif_task_overdue_body">Mark it done or move its date.</string>
@@ -2228,7 +2226,7 @@ your course catalog.</string>
     <string name="update_err_unsigned">The downloaded update is not signed by Semesta.</string>
     <string name="update_err_download">The download failed. Try again.</string>
 
-    <!-- Programas por area, para el onboarding -->
+    <!-- Programme suggestions for onboarding -->
     <string-array name="setup_programs_engineering">
         <item>B.Tech / B.E. — Computer Science</item>
         <item>B.Tech / B.E. — Information Technology</item>
@@ -2352,7 +2350,7 @@ your course catalog.</string>
         <item>Ph.D. — Sciences</item>
     </string-array>
 
-    <!-- Bloque B: validadores, fechas, notas, preferencias, repositorios -->
+    <!-- Validation, dates, grades, preferences and repositories -->
     <string name="validate_empty">It cannot be empty</string>
     <string name="validate_min_chars">It needs at least %1$s characters</string>
     <string name="validate_max_chars">It cannot exceed %1$s characters</string>
@@ -2421,7 +2419,7 @@ your course catalog.</string>
     <string name="home_title_verb_separator"> is </string>
     <string name="setup_other_option">Other</string>
 
-    <!-- Bloque C: el horario y las piezas de core -->
+    <!-- Timetable and core components -->
     <string name="schedule_identity_item_one">1 item</string>
     <string name="schedule_identity_item_many">%1$s items</string>
     <string name="schedule_identity_class_count_one">1 class</string>
@@ -2436,20 +2434,20 @@ your course catalog.</string>
     <string name="time_picker_clock">Clock</string>
     <string name="time_picker_keyboard">Keyboard</string>
 
-    <!-- Bloque D: el onboarding y la palabra Corte -->
+    <!-- Onboarding and assessment periods -->
     <string name="corte_singular">Assessment</string>
     <string name="corte_plural">Assessments</string>
     <string name="setup_welcome_hero_lead">Your semester,\n</string>
     <string name="setup_welcome_hero_accent">your way</string>
-    <string name="setup_name_title_lead">What is </string>
+    <string name="setup_name_title_lead">"What is "</string>
     <string name="setup_name_title_accent">your name?</string>
     <string name="setup_career_title_lead">What are you\n</string>
     <string name="setup_career_title_accent">studying?</string>
     <string name="setup_default_user">User</string>
-    <string name="setup_modules_footer_lead">You can always enable or disable modules\nfrom </string>
+    <string name="setup_modules_footer_lead">"You can always enable or disable modules\nfrom "</string>
     <string name="setup_modules_footer_accent">Settings</string>
-    <string name="setup_modules_footer_tail"> later.</string>
-    <string name="setup_done_lead">All set, </string>
+    <string name="setup_modules_footer_tail">" later."</string>
+    <string name="setup_done_lead">"All set, "</string>
     <string name="setup_module_templates_desc">Checklist, essays, and APA format.</string>
     <string name="setup_permissions_title_lead">Should I notify you\n</string>
     <string name="setup_permissions_title_accent">of upcoming events?</string>
@@ -2466,7 +2464,7 @@ your course catalog.</string>
     <string name="setup_perm_grade_title">Your Networks GPA increased to 4.1</string>
     <string name="setup_perm_grade_body">From the quiz you just recorded</string>
 
-    <!-- Bloque E: ajustes de notificaciones y cuenta -->
+    <!-- Notification and account settings -->
     <string name="settings_notif_one_hour_less">One hour less in %1$s</string>
     <string name="settings_notif_one_hour_more">One hour more in %1$s</string>
     <string name="settings_notif_five_min_less">Five minutes less in %1$s</string>
@@ -2476,7 +2474,7 @@ your course catalog.</string>
     <string name="settings_account_and_months"> and %1$s mo.</string>
     <string name="settings_account_months">%1$s months</string>
 
-    <!-- Bloque F: respaldos, detalle academico, franja de la escala y fechas de corte -->
+    <!-- Backups, academic details, grading scales and assessment dates -->
     <string name="backup_saved">Backup saved.</string>
     <string name="backup_save_failed">The backup could not be saved.</string>
     <string name="backup_read_failed">The file could not be read.</string>
@@ -2513,7 +2511,7 @@ your course catalog.</string>
     <string name="cut_dates_weight_of_grade">%1$s%% of the grade</string>
     <string name="cut_dates_weeks">%1$s weeks</string>
 
-    <!-- Bloque G: gastos, datos, apariencia, accesibilidad, inicio, movimiento y periodos -->
+    <!-- Expenses, data, appearance, accessibility, dashboard, motion and terms -->
     <string name="preview_sample_class_at_ten">Calculus III at 10:00</string>
     <string name="appearance_home_preview_caption">This is how your home looks with what you choose.</string>
     <string name="preview_sample_subject_calculus">Multivariable Calculus</string>
@@ -2528,7 +2526,7 @@ your course catalog.</string>
     <string name="motion_window_anything">WHEN ANYTHING ENTERS</string>
     <string name="motion_window_list">WHEN OPENING A LIST</string>
 
-    <!-- Bloque H: canales, ticket, calculadora, nube -->
+    <!-- Channels, support tickets, calculator and cloud -->
     <string name="notif_channel_alerts_name">Deliveries and classes</string>
     <string name="notif_channel_digest_name">Digest and follow-up</string>
     <string name="ticket_kind_bug">Bug</string>
@@ -2547,7 +2545,7 @@ your course catalog.</string>
     <string name="cloud_backup_link_first">Link a Google account before using the cloud backup.</string>
     <string name="cloud_backup_no_config">Cloud backup is not available in this build. Your local workspace is ready to use.</string>
 
-    <!-- Movimiento: el catalogo entero en recursos -->
+    <!-- Motion catalogue -->
     <string name="motion_v_none">None</string>
     <string name="motion_v_fast">Fast</string>
     <string name="motion_v_normal">Normal</string>
@@ -2611,12 +2609,12 @@ your course catalog.</string>
     <string name="motion_g_class_now_detail">The class happening right now, in the schedule and on Home.</string>
     <string name="motion_group_moments">MOMENTS</string>
 
-    <!-- Movimiento: ventanas de los momentos -->
+    <!-- Motion timing -->
     <string name="motion_window_cut">WHEN CLOSING A CUT</string>
     <string name="motion_window_schedule">IN SCHEDULE AND HOME</string>
 
 
-    <!-- Bloque J: notas, periodos, actualizaciones y piezas sueltas -->
+    <!-- Notes, terms, updates and shared components -->
     <string name="notes_count_many">%1$d notes</string>
     <string name="notes_this_note">this note</string>
     <string name="notes_day_pattern_other_year">MMMM d, yyyy</string>
@@ -2644,7 +2642,7 @@ your course catalog.</string>
     <string name="term_type_trimester">Trimester</string>
     <string name="term_type_semester">Semester</string>
 
-    <!-- Plantillas academicas: lista, ensayos, APA y exportacion -->
+    <!-- Academic templates, essays, APA and export -->
     <string name="tpl_check_topic_title">Defined Topic</string>
     <string name="tpl_check_topic_detail">Define a specific question and the scope of the work.</string>
     <string name="tpl_check_sources_title">Reviewed Sources</string>
@@ -2719,7 +2717,7 @@ your course catalog.</string>
     <string name="tpl_apa_sample_article">Author, A. (Year). Article title. Journal, volume(issue), pages.</string>
     <string name="tpl_apa_sample_web">Institution. (Year). Resource title. URL</string>
 
-    <!-- Muestras de Apariencia y Movimiento, y nombres de los temas propios -->
+    <!-- Appearance and motion previews, and theme names -->
     <string name="preview_win_subjects">COURSES</string>
     <string name="preview_calculus">Calculus III</string>
     <string name="preview_grade_line">You\'re at 4.25 · you need 3.1 in the third cut</string>
@@ -2777,7 +2775,7 @@ your course catalog.</string>
     <string name="fallo_hoja_enviar">Send</string>
     <string name="fallo_archivo_relato">What the user reported:</string>
 
-    <!-- Histórico académico -->
+    <!-- Academic history -->
     <string name="hist_titulo">Academic history</string>
     <string name="hist_subtitulo">%1$s · since %2$s %3$d</string>
     <string name="hist_periodo_uno">1 term</string>

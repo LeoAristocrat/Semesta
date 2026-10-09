@@ -17,7 +17,7 @@ import com.leoaristocrat.semesta.R
  * más restrictivo de los dos.
  */
 data class AccessibilityPreferences(
-    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
+    val appLanguage: AppLanguage = AppLanguage.ENGLISH,
     val highContrastEnabled: Boolean = false,
     val use24HourTime: Boolean = true,
     val textScale: TextScalePreference = TextScalePreference.STANDARD,
@@ -91,6 +91,7 @@ data class AccessibilityPreferences(
     val hapticsEnabled: Boolean = true
 )
 
+// Legacy names remain readable in backups; all runtime language choices normalize to English.
 enum class AppLanguage {
     SYSTEM,
     SPANISH,

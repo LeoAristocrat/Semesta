@@ -30,9 +30,9 @@ class NoteRemindersTest {
 
     @Test
     fun hoyYMananaSeDicenPorSuNombre() {
-        assertEquals("Hoy 18:00", NoteReminders.label(momento(2026, 8, 29, 18, 0), ahora, zona))
-        assertEquals("Mañana 7:15", NoteReminders.label(momento(2026, 8, 30, 7, 15), ahora, zona))
-        assertEquals("Ayer 9:00", NoteReminders.label(momento(2026, 8, 28, 9, 0), ahora, zona))
+        assertEquals("Today 18:00", NoteReminders.label(momento(2026, 8, 29, 18, 0), ahora, zona))
+        assertEquals("Tomorrow 7:15", NoteReminders.label(momento(2026, 8, 30, 7, 15), ahora, zona))
+        assertEquals("Yesterday 9:00", NoteReminders.label(momento(2026, 8, 28, 9, 0), ahora, zona))
     }
 
     @Test

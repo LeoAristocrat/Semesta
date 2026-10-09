@@ -40,7 +40,7 @@ class TasksViewModelTest {
 
     @Before
     fun setUp() {
-        java.util.Locale.setDefault(java.util.Locale("es"))
+        java.util.Locale.setDefault(java.util.Locale.ENGLISH)
         TextosDePrueba.instalar()
         tasksRepo = InMemoryTasksRepository()
         gradesRepo = InMemoryGradesRepository()
@@ -216,7 +216,7 @@ class TasksViewModelTest {
         assertNotNull(duplicated)
         assertEquals(2, viewModel.tasks.value.size)
         val copy = viewModel.tasks.value.first { it.id != taskId }
-        assertTrue(copy.title.contains("copia"))
+        assertTrue(copy.title.contains("copy"))
         assertFalse(copy.completed)
     }
 

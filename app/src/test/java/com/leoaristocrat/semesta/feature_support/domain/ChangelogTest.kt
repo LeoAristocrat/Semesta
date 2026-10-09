@@ -119,16 +119,12 @@ class ChangelogTest {
     }
 
     @Test
-    fun `el changelog en ingles se parsea correctamente`() {
-        val rootEn = java.io.File("../../CHANGELOG_EN.md").takeIf { it.exists() }
-            ?: java.io.File("CHANGELOG_EN.md").takeIf { it.exists() }
-            ?: java.io.File("../CHANGELOG_EN.md")
-        if (rootEn.exists()) {
-            val sections = parseChangelog(rootEn.readText())
-            val versions = sections.map { it.version }
-            assertTrue(versions.contains("1.0.2"))
-            assertTrue(versions.contains("1.0.1"))
-            assertTrue(versions.contains("1.0.0"))
-        }
+    fun `canonical English changelog contains the first Semesta release`() {
+        val root = generateSequence(java.io.File(System.getProperty("user.dir") ?: ".")) { it.parentFile }
+            .map { java.io.File(it, "CHANGELOG.md") }
+            .first { it.isFile }
+        val sections = parseChangelog(root.readText())
+        assertTrue(sections.any { it.version == "1.0.0" && it.body.contains("Semesta") })
+        assertTrue(sections.none { it.version == "Unreleased" })
     }
 }

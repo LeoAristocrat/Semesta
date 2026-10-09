@@ -121,10 +121,7 @@ class LocalJsonBackupRepository(
             agendaEvents = root.optJSONArray("agendaEvents")?.length() ?: 0,
             notes = root.optJSONArray("notes")?.length() ?: 0,
             terms = root.optJSONArray("terms")?.length() ?: 0,
-            appLanguage = root.optJSONObject("profile")
-                ?.optJSONObject("accessibilityPreferences")
-                ?.optString("appLanguage")
-                ?.toEnumOrNull<AppLanguage>()
+            appLanguage = AppLanguage.ENGLISH
         )
     }
 

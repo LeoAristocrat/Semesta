@@ -1,5 +1,32 @@
 # Semesta validation — 8 October 2026
 
+## English-only cleanup — 9 October 2026
+
+The current debug source passed assembly, design-token verification and **584 unit
+tests with zero failures, errors or skips**. Full Android lint passed with zero
+errors; 412 existing warning/informational findings remain. The final follow-up
+changed only four onboarding text fragments and their regression test, and reran
+assembly and the full unit suite. Android resources now preserve spaces around
+highlighted words in the name, module explanation and completion sentences.
+
+Native review on the isolated Android 36.1 phone emulator completed English
+onboarding for a synthetic B.Tech/B.E. Computer Science profile with a 10-point
+scale and editable 30/70 assessment weights. The accessibility formats group was
+inspected in light and dark modes: clock, date format and INR currency remain;
+there is no language selector. Captures remain local in
+`docs/visual-review/english-only/` and are excluded from Git.
+
+Compatibility tests cover a Spanish device configuration, legacy saved language
+choices, background resource resolution, and restored currency/date/accessibility
+preferences. The shipped changelog and its fallback asset are identical English
+published notes. Font authors and the complete OFL text were retained when moving
+`FUENTES.md` to `FONTS.md`. Spanish documents/resources and all GitHub workflow files
+are removed. Releases are manual; see [release instructions](RELEASING.md).
+
+The original signed 1.0.0 APK and bundle have not been rebuilt or retagged. Their
+historical verification remains in [release validation](RELEASE_VALIDATION.md).
+
+
 Visual-review screenshots are retained locally under `docs/visual-review/` and excluded from Git. Capture paths below identify local evidence; a fresh clone does not contain those images.
 
 The official-logo update is documented in [logo integration](LOGO_INTEGRATION.md), with current native captures and verification. Older screen captures below are historical evidence of the redesign before the supplied official logo.

@@ -23,7 +23,7 @@ class SupportTicketTest {
             context = contexto
         )
 
-        assertTrue(ticket.startsWith("🐞 Fallo"))
+        assertTrue(ticket.startsWith("🐞 Bug"))
         assertTrue(ticket.contains("El horario no muestra la clase del sábado."))
         assertTrue(ticket.contains("Semesta 1.1.0-alpha.1"))
         assertTrue(ticket.contains("Android 14 (SDK 34) · Pixel 8"))
@@ -50,9 +50,9 @@ class SupportTicketTest {
         val vacio = buildTicket(TicketKind.BUG, "algo", contact = "   ", context = contexto)
         val con = buildTicket(TicketKind.BUG, "algo", contact = " student@example.com ", context = contexto)
 
-        assertFalse(sin.contains("Contacto"))
-        assertFalse(vacio.contains("Contacto"))
-        assertTrue(con.contains("Contacto: student@example.com"))
+        assertFalse(sin.contains("Contact"))
+        assertFalse(vacio.contains("Contact"))
+        assertTrue(con.contains("Contact: student@example.com"))
     }
 
     @Test
@@ -73,8 +73,8 @@ class SupportTicketTest {
         val idea = buildTicket(TicketKind.IDEA, "algo", contact = null, context = contexto)
         val otro = buildTicket(TicketKind.OTHER, "algo", contact = null, context = contexto)
 
-        assertTrue(fallo.lineSequence().first().contains("Fallo"))
-        assertTrue(idea.lineSequence().first().contains("Sugerencia"))
-        assertTrue(otro.lineSequence().first().contains("Otro"))
+        assertTrue(fallo.lineSequence().first().contains("Bug"))
+        assertTrue(idea.lineSequence().first().contains("Suggestion"))
+        assertTrue(otro.lineSequence().first().contains("Other"))
     }
 }

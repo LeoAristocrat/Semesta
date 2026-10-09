@@ -77,7 +77,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.setValue
-private val SpanishLocale: java.util.Locale = java.util.Locale.forLanguageTag("es")
+private val SearchLocale: java.util.Locale = java.util.Locale.ROOT
 
 @Composable
 fun GradesScreen(
@@ -148,9 +148,9 @@ fun GradesScreen(
         var pendingBulkDelete by rememberSaveable { mutableStateOf(false) }
         val selecting = selectedIds.isNotEmpty()
         val calculations = subjects.associateWith(viewModel::calculationFor)
-        val query = nameQuery.trim().lowercase(SpanishLocale)
+        val query = nameQuery.trim().lowercase(SearchLocale)
         val visible = subjects.filter { subject ->
-            query.isBlank() || subject.name.lowercase(SpanishLocale).contains(query)
+            query.isBlank() || subject.name.lowercase(SearchLocale).contains(query)
         }.filter { subject ->
             val calculation = calculations.getValue(subject)
             when (filter) {

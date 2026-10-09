@@ -1336,7 +1336,7 @@ private fun SubjectOverviewCard(
                         verticalAlignment = Alignment.Top
                     ) {
                         Text(
-                            etiqueta.uppercase(Locale.forLanguageTag("es")),
+                            etiqueta.uppercase(Locale.ENGLISH),
                             color = MaterialTheme.colorScheme.onSurface,
                             style = SectionLabelStyle,
                             modifier = Modifier.weight(1f).padding(end = 8.dp)
@@ -2881,7 +2881,7 @@ private fun StatusBadge(status: CutStatus) {
             .padding(horizontal = 8.dp, vertical = 3.dp)
     ) {
         Text(
-            status.label.uppercase(Locale.forLanguageTag("es")),
+            status.label.uppercase(Locale.ENGLISH),
             color = contentColorOn(statusColor),
             style = SectionLabelStyle.copy(fontSize = 9.sp, lineHeight = 12.sp, letterSpacing = 0.5.sp)
         )

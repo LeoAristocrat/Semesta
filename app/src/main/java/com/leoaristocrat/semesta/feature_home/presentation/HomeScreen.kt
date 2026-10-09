@@ -124,7 +124,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import com.leoaristocrat.semesta.R
 
-private val SpanishLocale: Locale = Locale.forLanguageTag("es")
 
 /**
  * Inicio.

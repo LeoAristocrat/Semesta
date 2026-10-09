@@ -23,11 +23,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val pendingLaunchRoute = mutableStateOf<String?>(null)
 
-    /*
-     * El idioma por defecto sigue al sistema del dispositivo (AppLanguage.SYSTEM).
-     * Si el usuario eligió expresamente Español o Inglés en Accesibilidad,
-     * LocaleHelper aplica esa preferencia al contexto base.
-     */
+    // Apply English resources before Compose, independently of the device language.
     override fun attachBaseContext(newBase: Context) {
         val localizedBase = runCatching {
             com.leoaristocrat.semesta.core.utils.LocaleHelper.applyLocale(newBase)
