@@ -1,0 +1,12 @@
+# Copy to local.properties; that file is ignored by Git.
+# Use forward slashes in Windows paths.
+# sdk.dir=C:/Users/YOUR_USER/AppData/Local/Android/Sdk
+
+# Optional owner-controlled Firebase web/server OAuth client ID.
+googleWebClientId=
+
+# Supply your existing release key; never create a different key for an update.
+releaseStoreFile=.signing/semesta-release.jks
+releaseStorePassword=
+releaseKeyAlias=semesta
+releaseKeyPassword=

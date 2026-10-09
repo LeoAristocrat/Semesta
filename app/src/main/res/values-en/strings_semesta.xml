@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Semesta</string>
+    <string name="semesta_tagline">Make space for what matters.</string>
+    <string name="semesta_command_center">Your day, in focus.</string>
+    <string name="semesta_command_center_subtitle">Your next step. Everything connected.</string>
+    <string name="semesta_today">Today</string>
+    <string name="semesta_study">Study</string>
+    <string name="semesta_quick_actions">Quick actions</string>
+    <string name="semesta_workspace">Your workspace</string>
+    <string name="semesta_dashboard_customize">Customize your dashboard</string>
+    <string name="semesta_developer">Designed &amp; developed by Sayeem Sadik / Leo Aristocrat</string>
+    <string name="semesta_portfolio">Developer portfolio</string>
+    <string name="semesta_email">leoaristocratjr@gmail.com</string>
+    <string name="semesta_portfolio_url" translatable="false">https://leoaristocrat.eu.cc/</string>
+    <string name="semesta_updates_unconfigured">Semesta releases are not configured for this build yet. You can continue using your workspace offline.</string>
+    <string name="semesta_dynamic_color">Wallpaper colors</string>
+    <string name="semesta_dynamic_color_desc">Use your Android palette. Turn off to use curated themes and your accent. Available on Android 12 and later.</string>
+    <string name="semesta_theme_search">Find a theme</string>
+    <string name="semesta_all_themes">All themes</string>
+    <string name="semesta_background_tone">Background tone</string>
+    <string name="semesta_tone_default">Theme</string>
+    <string name="semesta_tone_pure">Pure</string>
+    <string name="semesta_tone_cool">Cool</string>
+    <string name="semesta_tone_violet">Violet</string>
+    <string name="semesta_surface_appearance">Surfaces</string>
+    <string name="semesta_surface_tonal">Tonal</string>
+    <string name="semesta_surface_outlined">Outlined</string>
+    <string name="semesta_surface_elevated">Raised</string>
+    <string name="semesta_surface_desc">Choose how panels separate from the background. Touch targets and text contrast stay accessible.</string>
+    <string name="semesta_backup_migration">Moving from the previous app? Export a complete local backup there, then restore it here. Include attachments to keep photos, recordings and files.</string>
+    <string name="semesta_privacy_title">Your data and privacy</string>
+    <string name="semesta_privacy_body">Semesta keeps your academic workspace in local storage. An account is optional. If you configure and link Google, cloud backup sends your academic backup to Firebase; binary attachments stay in your complete local backup. Notifications use local reminders. Update checks contact GitHub only when release infrastructure is configured. Recording uses the microphone only with your permission. Support opens your email app; you review and send the message. Use Data settings to export, restore or delete your local workspace.</string>
+    <string name="semesta_use_title">Using Semesta</string>
+    <string name="semesta_use_body">Semesta helps you organize study, grades, schedules and expenses. Your institution remains the source of truth for grades, attendance and deadlines. Keep a complete local backup before changing devices or importing another workspace. Third-party library and font licenses are available below. Contact leoaristocratjr@gmail.com for product questions.</string>
+    <string name="semesta_week_range">%1$s – %2$s</string>
+    <string name="semesta_completed_count">%1$d of %2$d completed</string>
+<string name="common_close">Close</string>
+<string name="semesta_google_unconfigured">Google sign-in is not configured for this build. You can use Semesta locally.</string>
+    <string name="semesta_no_themes">No matching themes. Try another name or category.</string>
+    <string-array name="semesta_accent_names">
+        <item>Theme accent</item><item>Violet accent</item><item>Blue accent</item><item>Cyan accent</item>
+        <item>Teal accent</item><item>Green accent</item><item>Amber accent</item><item>Orange accent</item>
+        <item>Red accent</item><item>Pink accent</item><item>Lavender accent</item><item>Slate accent</item>
+    </string-array>
+<string name="semesta_personalize">Personalize</string>
+    <string name="semesta_time_hour">Hour</string>
+    <string name="semesta_time_minutes">Minutes</string>
+    <string name="semesta_time_from">From</string>
+    <string name="semesta_time_to">To</string>
+    <string name="semesta_nav_plan">Plan</string>
+    <string name="semesta_nav_money">Money</string>
+    <string name="semesta_nav_more">More</string>
+    <string name="semesta_task_due_tomorrow">Now due tomorrow</string>
+    <string name="semesta_task_due_monday">Now due next Monday</string>
+    <string name="semesta_task_time_suffix">at %1$s</string>
+    <string name="semesta_task_grade_in_assessment">%1$s in %2$s</string>
+    <string name="semesta_task_delivered_grade_recorded">Submitted %1$s · grade recorded in the subject</string>
+    <string name="semesta_task_due_date">Now due %1$s</string>
+    <string name="semesta_task_grade_save_error">Could not save the grade. Check the assessment and try again.</string>
+</resources>

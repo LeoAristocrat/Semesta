@@ -1,0 +1,92 @@
+package com.leoaristocrat.semesta.feature_updates.presentation
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.leoaristocrat.semesta.feature_updates.domain.InstalledVersion
+import com.leoaristocrat.semesta.feature_updates.domain.UpdateInfo
+import com.leoaristocrat.semesta.feature_updates.domain.UpdateRepository
+import com.leoaristocrat.semesta.feature_updates.domain.UpdateSettings
+import com.leoaristocrat.semesta.feature_updates.domain.UpdateState
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class UpdateViewModel @Inject constructor(
+    private val updateRepository: UpdateRepository
+) : ViewModel() {
+
+    val state: StateFlow<UpdateState> = updateRepository.state
+
+    /** Las publicaciones recientes, de la más nueva a la más vieja. */
+    val releases: StateFlow<List<UpdateInfo>> = updateRepository.releases
+
+    /** La puesta: la de la compilación, o la de la escena del banco de pruebas mientras dure. */
+    val installedVersion: StateFlow<String> = updateRepository.installedVersion
+
+    /**
+     * Los APK que quedan en el disco.
+     *
+     * Era un `get()` que la pantalla leía al componerse: leer eso no suscribe a nada, así que
+     * al borrarlos la tarjeta de limpieza se quedaba puesta hasta salir y volver a entrar.
+     */
+    val pendingApks: StateFlow<Int> = updateRepository.pendingApks
+
+    val lastCheckedAt: StateFlow<Long> = updateRepository.lastCheckedAt
+    val settings: StateFlow<UpdateSettings> = updateRepository.settings
+    val installHistory: StateFlow<List<InstalledVersion>> = updateRepository.installHistory
+    val sheetSeenVersion: StateFlow<String?> = updateRepository.sheetSeenVersion
+
+    fun refreshPendingApks() {
+        updateRepository.refreshPendingApks()
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            updateRepository.checkForUpdates()
+        }
+    }
+
+    fun downloadUpdate(allowMetered: Boolean = true) {
+        updateRepository.downloadUpdate(allowMetered)
+    }
+
+    fun isOnMeteredNetwork(): Boolean = updateRepository.isOnMeteredNetwork()
+
+    val downloadRequested: StateFlow<Boolean> = updateRepository.downloadRequested
+
+    fun requestDownload() {
+        updateRepository.requestDownload()
+    }
+
+    fun consumeDownloadRequest() {
+        updateRepository.consumeDownloadRequest()
+    }
+
+    fun installUpdate() {
+        updateRepository.installUpdate()
+    }
+
+    /**
+     * Se consulta en cada composición y no se cachea: el usuario puede conceder el permiso
+     * en Ajustes y volver, y el estado tiene que reflejarlo.
+     */
+    fun canInstallPackages(): Boolean = updateRepository.canInstallPackages()
+
+    fun openInstallPermissionSettings() {
+        updateRepository.openInstallPermissionSettings()
+    }
+
+    fun clearDownload() {
+        updateRepository.clearDownload()
+    }
+
+    fun updateSettings(transform: (UpdateSettings) -> UpdateSettings) {
+        updateRepository.updateSettings(transform)
+    }
+
+    fun markSheetSeen(versionName: String) {
+        updateRepository.markSheetSeen(versionName)
+    }
+}

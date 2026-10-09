@@ -1,0 +1,11 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary
+*.webp binary
+*.jar binary
+*.ttf binary
+*.zip binary
+
+# Preserve bundled legal notices byte for byte.
+app/src/main/assets/licencias/* -text

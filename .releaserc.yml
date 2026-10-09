@@ -1,0 +1,16 @@
+version:
+  file: VERSION
+changelog:
+  files:
+    - path: CHANGELOG.md
+      lang: en
+    - path: CHANGELOG.es.md
+      lang: es
+commit:
+  message: "chore: release v{version}"
+tag:
+  prefix: v
+  sign: false
+include:
+  - README.md
+  - VERSION

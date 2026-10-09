@@ -1,0 +1,1729 @@
+package com.leoaristocrat.semesta.core.navigation
+
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.platform.LocalConfiguration
+import com.leoaristocrat.semesta.core.design.theme.SemestaTokens
+import android.app.Activity
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.ime
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.NavigationItemIconPosition
+import androidx.compose.material3.ShortNavigationBarArrangement
+import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.material3.ShortNavigationBarItemDefaults
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.leoaristocrat.semesta.core.utils.performSafely
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.leoaristocrat.semesta.core.di.rememberSemestaEntryPoint
+import com.leoaristocrat.semesta.core.utils.BuildStage
+import com.leoaristocrat.semesta.BuildConfig
+import com.leoaristocrat.semesta.core.design.theme.LocalAppearancePreferences
+import com.leoaristocrat.semesta.core.design.theme.motionActual
+import com.leoaristocrat.semesta.core.design.theme.LocalMotionDurationScale
+import com.leoaristocrat.semesta.feature_expenses.presentation.AddExpenseScreen
+import com.leoaristocrat.semesta.feature_expenses.presentation.ExpenseInsightsScreen
+import com.leoaristocrat.semesta.feature_expenses.presentation.ExpensesScreen
+import com.leoaristocrat.semesta.feature_grades.presentation.AddGradeScreen
+import com.leoaristocrat.semesta.feature_grades.presentation.AcademicScreen
+import com.leoaristocrat.semesta.feature_grades.presentation.PriorHistoryScreen
+import com.leoaristocrat.semesta.feature_grades.presentation.SubjectDetailScreen
+import com.leoaristocrat.semesta.feature_grades.presentation.SubjectFormMode
+import com.leoaristocrat.semesta.feature_grades.presentation.SubjectFormScreen
+import com.leoaristocrat.semesta.feature_grades.presentation.SubjectCutDetailScreen
+import com.leoaristocrat.semesta.feature_grades.presentation.SubjectStatsScreen
+import com.leoaristocrat.semesta.feature_home.presentation.HomeScreen
+import com.leoaristocrat.semesta.feature_home.presentation.HomeViewModel
+import com.leoaristocrat.semesta.feature_notifications.presentation.NotificationDetailScreen
+import com.leoaristocrat.semesta.feature_notifications.presentation.NotificationHistoryScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AppearanceSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.ThemeSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.SurfaceSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.TypographySettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.ComponentSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.HomeSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.MotionSettingsScreen
+import com.leoaristocrat.semesta.feature_terms.presentation.NewTermScreen
+import com.leoaristocrat.semesta.feature_terms.presentation.TermsViewModel
+import com.leoaristocrat.semesta.feature_terms.presentation.AcademicHistoryScreen
+import com.leoaristocrat.semesta.feature_terms.presentation.TermBulletinScreen
+import com.leoaristocrat.semesta.feature_terms.presentation.TermDetailScreen
+import com.leoaristocrat.semesta.feature_terms.presentation.TermEditGradesScreen
+import com.leoaristocrat.semesta.feature_terms.presentation.TermSubjectScreen
+import com.leoaristocrat.semesta.feature_terms.presentation.TermCloseScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AcademicSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AcademicScaleScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AcademicCutsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AcademicAbsenceScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AcademicBreaksScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AcademicTermScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AccountSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.ModuleSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.NotificationSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.DataSettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.AccessibilitySettingsScreen
+import com.leoaristocrat.semesta.feature_profile.presentation.SettingsHubScreen
+import com.leoaristocrat.semesta.feature_schedule.presentation.CalendarScheduleScreen
+import com.leoaristocrat.semesta.feature_support.presentation.AboutScreen
+import com.leoaristocrat.semesta.feature_support.presentation.LicensesScreen
+import com.leoaristocrat.semesta.feature_support.presentation.AiAssistantScreen
+import com.leoaristocrat.semesta.feature_support.presentation.GpaCalculatorScreen
+import com.leoaristocrat.semesta.feature_support.presentation.LabsScreen
+import com.leoaristocrat.semesta.feature_notes.presentation.NoteEditorScreen
+import com.leoaristocrat.semesta.feature_notes.presentation.NewNoteStart
+import com.leoaristocrat.semesta.feature_notes.presentation.NotesListScreen
+import com.leoaristocrat.semesta.feature_support.presentation.HelpScreen
+import com.leoaristocrat.semesta.feature_support.presentation.ResourcesScreen
+import com.leoaristocrat.semesta.feature_support.presentation.WhatsNewScreen
+import com.leoaristocrat.semesta.feature_tasks.presentation.AddTaskScreen
+import com.leoaristocrat.semesta.feature_templates.presentation.AcademicWorkScreen
+import com.leoaristocrat.semesta.feature_updates.domain.UpdateState
+import com.leoaristocrat.semesta.feature_updates.presentation.UpdateDetailSheet
+import com.leoaristocrat.semesta.feature_updates.presentation.UpdateHistoryScreen
+import com.leoaristocrat.semesta.feature_updates.presentation.UpdateSettingsScreen
+import com.leoaristocrat.semesta.feature_updates.presentation.UpdateVersionScreen
+import com.leoaristocrat.semesta.feature_updates.presentation.UpdateViewModel
+import com.leoaristocrat.semesta.feature_user.domain.AppModule
+import com.leoaristocrat.semesta.feature_user.domain.BottomBarStyle
+import com.leoaristocrat.semesta.feature_user.domain.InitialTab
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import com.leoaristocrat.semesta.R
+
+private val DefaultEnabledModules = setOf(AppModule.GRADES, AppModule.TASKS)
+
+@Composable
+fun MainNavGraph(
+    modifier: Modifier = Modifier,
+    initialRoute: String = AppRoutes.Home,
+    launchRoute: String? = null,
+    onLaunchRouteConsumed: () -> Unit = {}
+) {
+    val navController = rememberNavController()
+    val appearance = LocalAppearancePreferences.current
+    val userRepository = rememberSemestaEntryPoint().userRepository()
+    val enabledModules by remember {
+        userRepository.userProfile
+            .map { it?.enabledModules ?: DefaultEnabledModules }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(
+        initialValue = userRepository.userProfile.value?.enabledModules ?: DefaultEnabledModules
+    )
+    val bottomItems = remember(enabledModules) { BottomNavItem.itemsFor(enabledModules) }
+    /*
+     * Se decide una vez, al montar el grafo, y no se vuelve a mirar.
+     *
+     * Estaba recordado con la pestaña de arranque como clave, y `NavHost` navega en cuanto
+     * le cambia el destino inicial: elegir «Horario» en Apariencia › Tu inicio te llevaba al
+     * horario en el acto («es solo selección, no navegación», 20 sep 2026). El grafo solo se
+     * monta con el perfil cargado, así que aquí la preferencia ya es la de verdad.
+     */
+    val resolvedInitialRoute = remember(initialRoute) {
+        if (initialRoute != AppRoutes.Home) {
+            initialRoute
+        } else {
+            // Con la pestaña en la ruta: «Académico» a secas abre la primera, que es Materias,
+            // así que elegir Tareas como pantalla de arranque abría Materias.
+            when (appearance.initialTab) {
+                InitialTab.HOME -> AppRoutes.Home
+                InitialTab.GRADES -> if (AppModule.GRADES in enabledModules) {
+                    AppRoutes.academic(AppRoutes.AcademicTabSubjects)
+                } else {
+                    AppRoutes.Home
+                }
+                InitialTab.TASKS -> if (AppModule.TASKS in enabledModules) {
+                    AppRoutes.academic(AppRoutes.AcademicTabTasks)
+                } else {
+                    AppRoutes.Home
+                }
+                InitialTab.SCHEDULE -> AppRoutes.Calendar
+                InitialTab.EXPENSES -> if (AppModule.EXPENSES in enabledModules) AppRoutes.Expenses else AppRoutes.Home
+            }
+        }
+    }
+    val currentRoute = navController.currentRouteAsState() ?: resolvedInitialRoute
+
+    /*
+     * Salir de la app pide dos toques, y solo en Inicio.
+     *
+     * En cualquier otra pantalla, atrás vuelve a la anterior: eso no hace falta protegerlo.
+     * Pero en Inicio ya no queda ninguna anterior, así que ese mismo gesto cerraba la app sin
+     * avisar de un solo toque — el más fácil de dar sin querer, porque es el único sitio donde
+     * atrás no tiene nada que deshacer. El primer toque solo avisa; el segundo, dentro de los
+     * dos segundos siguientes, es el que sale de verdad.
+     *
+     * Se activa solo cuando la pila de navegación ya está vacía. Con esto siempre encendido se
+     * perdería el gesto predictivo del sistema en el resto de la app, por la misma razón que en
+     * `rememberLeaveGuard`.
+     */
+    val context = LocalContext.current
+    val activity = context as? Activity
+    var lastBackPressAt by remember { mutableStateOf(0L) }
+    BackHandler(enabled = currentRoute == AppRoutes.Home) {
+        val now = System.currentTimeMillis()
+        if (now - lastBackPressAt <= 2000L) {
+            activity?.finish()
+        } else {
+            lastBackPressAt = now
+            Toast.makeText(context, com.leoaristocrat.semesta.core.utils.Textos.get(R.string.common_press_again_to_exit), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    var homeDrawerOpen by remember { mutableStateOf(false) }
+    LaunchedEffect(currentRoute) {
+        if (currentRoute != AppRoutes.Home) homeDrawerOpen = false
+    }
+    val showBottomBar = !homeDrawerOpen && routeShowsBottomBar(currentRoute)
+
+    LaunchedEffect(launchRoute, enabledModules) {
+        launchRoute?.let { route ->
+            navController.navigateIfModuleEnabled(route, enabledModules)
+            onLaunchRouteConsumed()
+        }
+    }
+
+    ModuleAccessGuard(
+        navController = navController,
+        enabledModules = enabledModules
+    )
+
+    val wide = LocalConfiguration.current.screenWidthDp >= SemestaTokens.RailBreakpoint
+    Row(modifier.fillMaxSize()) {
+        if (wide && showBottomBar) SemestaBottomBar(navController, items = bottomItems, rail = true)
+    Scaffold(
+        modifier = Modifier.weight(1f).fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0.dp),
+        bottomBar = {
+            /*
+             * La barra no se mueve nunca: vive pegada al borde de la pantalla.
+             *
+             * Con `adjustResize` la ventana encogía al abrirse el teclado y el `Scaffold`
+             * recolocaba su barra **encima** del teclado. Esconderla tampoco valía: una barra
+             * de pestañas que aparece y desaparece deja de ser un punto fijo.
+             *
+             * La ventana ya no encoge (`adjustNothing` en el manifiesto): el teclado se pone
+             * por delante, la barra se queda donde estaba —tapada mientras escribes— y lo que
+             * se aparta es el contenido, con el hueco que se calcula abajo.
+             */
+            if (showBottomBar && !wide) {
+                SemestaBottomBar(
+                    navController = navController,
+                    items = bottomItems
+                )
+            }
+        }
+    ) { innerPadding ->
+        /*
+         * Abajo se reserva lo que tape más: la barra o el teclado.
+         *
+         * No se suman. Con el teclado arriba la barra queda por detrás de él, así que contar
+         * las dos alturas dejaría el contenido flotando ochenta píxeles más arriba de donde
+         * empieza el teclado.
+         *
+         * Y se lee el inset crudo, que es la altura real del teclado en pantalla: aquí abajo
+         * nadie lo ha consumido todavía, porque el hueco se abre justo en la línea siguiente.
+         */
+        val keyboardBottom = with(LocalDensity.current) {
+            WindowInsets.ime.getBottom(this).toDp()
+        }
+        val contentPadding = PaddingValues(
+            start = innerPadding.calculateStartPadding(LocalLayoutDirection.current),
+            top = innerPadding.calculateTopPadding(),
+            end = innerPadding.calculateEndPadding(LocalLayoutDirection.current),
+            bottom = maxOf(innerPadding.calculateBottomPadding(), keyboardBottom)
+        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            /*
+             * El empuje: la que entra llega desde el borde, la que se va se aparta un tercio.
+             *
+             * Se apilaban unas sobre otras al cambiar rapido, y el motivo no era la curva:
+             * era que ningun destino pintaba fondo propio, asi que durante el deslizamiento
+             * se veian las dos a la vez. Cada uno va ahora dentro de una superficie opaca
+             * -ver screen()-, y con eso el problema no puede darse: lo de arriba tapa.
+             *
+             * Sin fundido. Apagarse es volverse transparente, que es exactamente lo que hay
+             * que evitar aqui. Y los muelles salen del tema, no de duraciones escritas.
+             */
+            val motionEnabled = LocalMotionDurationScale.current > 0f
+            val slide = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+            /*
+             * Cual de las seis, la que se haya elegido en Movimiento.
+             *
+             * Estuvo escrita a mano aqui —siempre el empuje— y el ajuste solo podia apagarla.
+             * Ahora el estilo sale de las preferencias y esto se limita a montarlo.
+             */
+            val transicion = transicionDe(
+                estilo = motionActual().screenTransition,
+                desplazamiento = slide,
+                fundido = MaterialTheme.motionScheme.defaultEffectsSpec()
+            )
+
+            NavHost(
+                navController = navController,
+                startDestination = resolvedInitialRoute,
+                modifier = Modifier
+                    .fillMaxSize()
+                    /*
+                     * El teclado se esquiva aquí dentro, y una sola vez.
+                     *
+                     * Se declara consumido para que el imePadding() que aplican algunas
+                     * pantallas por su cuenta no vuelva a apartarlas: el hueco de arriba ya
+                     * las ha subido, y sumar el segundo las dejaba con el contenido a media
+                     * pantalla. Consumir es lo que hacía la raíz antes de que el teclado
+                     * pasara a resolverse dentro del Scaffold, y por eso aquellas pantallas
+                     * nunca contaron doble.
+                     */
+                    .consumeWindowInsets(WindowInsets.ime)
+                    .padding(contentPadding),
+                enterTransition = {
+                    if (!motionEnabled || isTabSwitch(initialState, targetState)) EnterTransition.None
+                    else transicion.entra
+                },
+                exitTransition = {
+                    if (!motionEnabled || isTabSwitch(initialState, targetState)) ExitTransition.None
+                    else transicion.sale
+                },
+                popEnterTransition = {
+                    if (!motionEnabled || isTabSwitch(initialState, targetState)) EnterTransition.None
+                    else transicion.vuelveEntrando
+                },
+                popExitTransition = {
+                    if (!motionEnabled || isTabSwitch(initialState, targetState)) ExitTransition.None
+                    else transicion.vuelveSaliendo
+                }
+            ) {
+                composable(AppRoutes.Home) {
+                    val viewModel: HomeViewModel = hiltViewModel()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                    // Para saber si hay periodo en curso. Inicio no puede quedarse en blanco
+                    // entre un semestre y el siguiente.
+                    val termsViewModel: TermsViewModel = hiltViewModel()
+                    val termsState by termsViewModel.uiState.collectAsStateWithLifecycle()
+
+                    val updateViewModel: UpdateViewModel = hiltViewModel()
+                    val updateState by updateViewModel.state.collectAsStateWithLifecycle()
+                    val sheetSeenVersion by updateViewModel.sheetSeenVersion.collectAsStateWithLifecycle()
+                    // La hoja sale solo con versión disponible —no bajando ni ya lista— y una
+                    // vez por versión. El banner rojo que iba encima de Inicio se fue el 19 sep
+                    // 2026: usaba el color de error y llevaba al hub de Ajustes.
+                    val updateInfo = (updateState as? UpdateState.Available)?.info
+                        ?.takeIf { it.versionName != sheetSeenVersion }
+
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        HomeScreen(
+                            uiState = uiState,
+                            historico = termsState,
+                            onStartNewTermClick = { navController.go(AppRoutes.NewTerm) },
+                            onOpenHistoryClick = { navController.go(AppRoutes.AcademicHistory) },
+                            onOpenTermClick = { id -> navController.go(AppRoutes.termDetail(id)) },
+                            onAcademicSettingsClick = { navController.go(AppRoutes.AcademicSettings) },
+                            onNextTermReminderChange = termsViewModel::setAvisoParaEmpezar,
+                            onNextTermReminderDayChange = termsViewModel::setDiaDelAviso,
+                            onUndoTermClose = termsViewModel::deshacerCierre,
+                            onAddSubjectClick = { navController.navigateIfModuleEnabled(AppRoutes.AddSubject, enabledModules) },
+                            onSeeAllSubjectsClick = { navController.navigateIfModuleEnabled(AppRoutes.academic(AppRoutes.AcademicTabSubjects), enabledModules) },
+                            onSeeTasksClick = { navController.navigateIfModuleEnabled(AppRoutes.academic(AppRoutes.AcademicTabTasks), enabledModules) },
+                            onSeeExpensesClick = { navController.navigateIfModuleEnabled(AppRoutes.Expenses, enabledModules) },
+                            onOpenTemplatesClick = { navController.navigateIfModuleEnabled(AppRoutes.AcademicTemplates, enabledModules) },
+                            onCalendarClick = { navController.go(AppRoutes.Calendar) },
+                            onSubjectClick = { subjectId -> navController.navigateIfModuleEnabled(AppRoutes.subjectDetail(subjectId), enabledModules) },
+                            onNotificationsClick = {
+                                navController.navigate(AppRoutes.Notifications) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onWhatsNewClick = { navController.go(AppRoutes.WhatsNew) },
+                            onResourcesClick = { navController.go(AppRoutes.Resources) },
+                            onHelpClick = { navController.go(AppRoutes.Help) },
+                            onAboutClick = { navController.go(AppRoutes.About) },
+                            onGpaClick = { navController.go(AppRoutes.GpaCalculator) },
+                            onCustomizeDashboardClick = { navController.go(AppRoutes.HomeSettings) },
+                            onQuickNotesClick = { navController.go(AppRoutes.QuickNotes) },
+                            onNoteClick = { id -> navController.go(AppRoutes.noteEditor(id)) },
+                            onNewNoteClick = { navController.go(AppRoutes.NewNote) },
+                            onAiClick = { navController.go(AppRoutes.AiAssistant) },
+                            onLabsClick = { navController.go(AppRoutes.Labs) },
+                            onProfileClick = {
+                                navController.navigate(AppRoutes.Profile) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onAddGradeClick = { subjectId ->
+                                navController.navigateIfModuleEnabled(AppRoutes.addGrade(subjectId), enabledModules)
+                            },
+                            onAddTaskClick = { navController.navigateIfModuleEnabled(AppRoutes.AddTask, enabledModules) },
+                            onAddExpenseClick = { navController.navigateIfModuleEnabled(AppRoutes.AddExpense, enabledModules) },
+                            onDrawerOpenChange = { open -> homeDrawerOpen = open },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    if (updateInfo != null) {
+                        UpdateDetailSheet(
+                            info = updateInfo,
+                            onChangelogClick = {
+                                updateViewModel.markSheetSeen(updateInfo.versionName)
+                                navController.go(AppRoutes.UpdateSettings)
+                            },
+                            onUpdateClick = {
+                                updateViewModel.markSheetSeen(updateInfo.versionName)
+                                // La pregunta de los datos móviles vive en Actualizaciones:
+                                // se deja el encargo y la pantalla lo recoge al abrirse.
+                                updateViewModel.requestDownload()
+                                navController.go(AppRoutes.UpdateSettings)
+                            },
+                            onDismiss = { updateViewModel.markSheetSeen(updateInfo.versionName) }
+                        )
+                    }
+                }
+            screen(AppRoutes.Notifications) {
+                NotificationHistoryScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Home)
+                        }
+                    },
+                    onNotificationClick = { notificationId ->
+                        navController.go(AppRoutes.notificationDetail(notificationId))
+                    },
+                    onSettingsClick = {
+                        navController.navigate(AppRoutes.NotificationSettings) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            screen("${AppRoutes.NotificationDetail}/{notificationId}") { backStackEntry ->
+                val notificationId = backStackEntry.arguments
+                    ?.getString("notificationId")
+                    ?.toIntOrNull()
+                    ?: -1
+                NotificationDetailScreen(
+                    notificationId = notificationId,
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Notifications)
+                        }
+                    },
+                    onOpenRelated = { route ->
+                        navController.navigateIfModuleEnabled(route, enabledModules)
+                    }
+                )
+            }
+            // Materias y Tareas ya no son pantallas propias: viven como pestañas de
+            // Académico, que es donde llega la barra inferior. Aquí solo quedan como
+            // redirección porque hay recordatorios ya programados con la cadena "tasks"
+            // guardada dentro; borrarlas dejaría esas notificaciones apuntando a la nada.
+            screen(AppRoutes.Grades) {
+                RedirectToAcademic(navController, AppRoutes.AcademicTabSubjects)
+            }
+            screen(AppRoutes.Tasks) {
+                RedirectToAcademic(navController, AppRoutes.AcademicTabTasks)
+            }
+            screen(AppRoutes.Profile) {
+                AccountSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    }
+                )
+            }
+            screen(
+                route = AppRoutes.AcademicWithTab,
+                arguments = listOf(
+                    navArgument(AppRoutes.AcademicTabArg) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { entry ->
+                AcademicScreen(
+                    initialTab = entry.arguments?.getString(AppRoutes.AcademicTabArg),
+                    onAddSubjectClick = {
+                        navController.navigateIfModuleEnabled(AppRoutes.AddSubject, enabledModules)
+                    },
+                    onSubjectClick = { subjectId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    },
+                    onEditSubjectClick = { subjectId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.editSubject(subjectId), enabledModules)
+                    },
+                    onNewTaskClick = {
+                        navController.navigateIfModuleEnabled(AppRoutes.AddTask, enabledModules)
+                    },
+                    onEditTaskClick = { taskId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.editTask(taskId), enabledModules)
+                    },
+                    onOpenTaskClick = { taskId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.taskDetail(taskId), enabledModules)
+                    },
+                    onCompleteHistoryClick = { subjectId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.priorHistory(subjectId), enabledModules)
+                    }
+                )
+            }
+            screen(AppRoutes.Settings) {
+                val termsViewModel: TermsViewModel = hiltViewModel()
+                val termsState by termsViewModel.uiState.collectAsStateWithLifecycle()
+                SettingsHubScreen(
+                    academicHistorySubtitle = termsState.historial?.let { historial ->
+                        historySubtitle(historial.cerrados.size, historial.acumulado, historial.notaMaxima)
+                    },
+                    // Sin flecha: es la raíz de su pestaña, no se vuelve de ella a ningún
+                    // sitio. Se llega tocando «Ajustes» abajo y se sale igual.
+                    onBackClick = null,
+                    onAppearanceClick = { navController.go(AppRoutes.AppearanceSettings) },
+                    onAccessibilityClick = { navController.go(AppRoutes.AccessibilitySettings) },
+                    onProfileClick = {
+                        navController.navigate(AppRoutes.Profile) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onAcademicClick = { navController.go(AppRoutes.AcademicSettings) },
+                    onAcademicHistoryClick = { navController.go(AppRoutes.AcademicHistory) },
+                    onModulesClick = { navController.go(AppRoutes.ModuleSettings) },
+                    onNotificationsClick = { navController.go(AppRoutes.NotificationSettings) },
+                    onDataClick = { navController.go(AppRoutes.DataSettings) },
+                    onUpdatesClick = { navController.go(AppRoutes.UpdateSettings) }
+                )
+            }
+            screen(AppRoutes.UpdateSettings) {
+                UpdateSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    },
+                    onHistoryClick = { navController.go(AppRoutes.UpdateHistory) }
+                )
+            }
+            screen(AppRoutes.UpdateHistory) {
+                UpdateHistoryScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.UpdateSettings)
+                        }
+                    },
+                    onVersionClick = { version -> navController.go(AppRoutes.updateVersion(version)) }
+                )
+            }
+            screen(
+                "${AppRoutes.UpdateVersion}/{${AppRoutes.UpdateVersionArg}}",
+                arguments = listOf(navArgument(AppRoutes.UpdateVersionArg) { type = NavType.StringType })
+            ) { backStackEntry ->
+                UpdateVersionScreen(
+                    versionName = backStackEntry.arguments?.getString(AppRoutes.UpdateVersionArg).orEmpty(),
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.UpdateHistory)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.AppearanceSettings) {
+                AppearanceSettingsScreen(
+                    onThemeClick = { navController.go(AppRoutes.ThemeSettings) },
+                    onSurfaceClick = { navController.go(AppRoutes.SurfaceSettings) },
+                    onTypographyClick = { navController.go(AppRoutes.TypographySettings) },
+                    onComponentsClick = { navController.go(AppRoutes.ComponentSettings) },
+                    onHomeClick = { navController.go(AppRoutes.HomeSettings) },
+                    onMotionClick = { navController.go(AppRoutes.MotionSettings) },
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.AccessibilitySettings) {
+                AccessibilitySettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.Calendar) {
+                CalendarScheduleScreen(
+                    onTaskClick = { taskId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.editTask(taskId), enabledModules)
+                    },
+                    // Sin navigateIfModuleEnabled: crear una clase no depende del módulo de
+                    // notas. Horario es pestaña fija aunque Académico esté apagado, y con la
+                    // comprobación puesta el botón «Añadir clase» llevaría a Inicio.
+                    onAddClassClick = {
+                        navController.navigate(AppRoutes.AddSubjectFromSchedule) { launchSingleTop = true }
+                    },
+                    onEditSubjectClick = { subjectId ->
+                        navController.navigate(AppRoutes.editSubjectFromSchedule(subjectId)) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.AcademicSettings) {
+                AcademicSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    },
+                    onScaleClick = { navController.go(AppRoutes.AcademicScale) },
+                    onCutsClick = { navController.go(AppRoutes.AcademicCuts) },
+                    onAbsenceClick = { navController.go(AppRoutes.AcademicAbsence) },
+                    onBreaksClick = { navController.go(AppRoutes.AcademicBreaks) },
+                    onTermClick = { navController.go(AppRoutes.AcademicTerm) },
+                    onNewTermClick = { navController.go(AppRoutes.NewTerm) }
+                )
+            }
+            screen(AppRoutes.ThemeSettings) {
+                ThemeSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) navController.go(AppRoutes.AppearanceSettings)
+                    }
+                )
+            }
+            screen(AppRoutes.SurfaceSettings) {
+                SurfaceSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) navController.go(AppRoutes.AppearanceSettings)
+                    }
+                )
+            }
+            screen(AppRoutes.TypographySettings) {
+                TypographySettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) navController.go(AppRoutes.AppearanceSettings)
+                    }
+                )
+            }
+            screen(AppRoutes.ComponentSettings) {
+                ComponentSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) navController.go(AppRoutes.AppearanceSettings)
+                    }
+                )
+            }
+            screen(AppRoutes.HomeSettings) {
+                HomeSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) navController.go(AppRoutes.AppearanceSettings)
+                    }
+                )
+            }
+            screen(AppRoutes.MotionSettings) {
+                MotionSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) navController.go(AppRoutes.AppearanceSettings)
+                    }
+                )
+            }
+            screen(AppRoutes.AcademicTerm) {
+                AcademicTermScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicSettings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.AcademicScale) {
+                AcademicScaleScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicSettings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.AcademicCuts) {
+                AcademicCutsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicSettings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.AcademicAbsence) {
+                AcademicAbsenceScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicSettings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.AcademicBreaks) {
+                AcademicBreaksScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicSettings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.NewTerm) {
+                NewTermScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Home)
+                        }
+                    },
+                    onCreated = {
+                        navController.navigate(AppRoutes.Home) {
+                            popUpTo(AppRoutes.Home) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onAcademicSettingsClick = { navController.go(AppRoutes.AcademicSettings) }
+                )
+            }
+            screen(AppRoutes.AcademicHistory) {
+                AcademicHistoryScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    },
+                    onTermClick = { termId ->
+                        navController.navigate(AppRoutes.termDetail(termId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onCloseTermClick = {
+                        navController.navigate(AppRoutes.TermClose) { launchSingleTop = true }
+                    },
+                    onScheduleClick = { navController.go(AppRoutes.Calendar) }
+                )
+            }
+            screen(AppRoutes.TermClose) {
+                TermCloseScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicHistory)
+                        }
+                    },
+                    // Cerrado el periodo, esta pantalla ya no tiene nada que enseñar: a Inicio,
+                    // que es donde aparece el «Deshacer» y el periodo siguiente.
+                    onClosed = {
+                        navController.navigate(AppRoutes.Home) {
+                            popUpTo(AppRoutes.Home) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            listOf(AppRoutes.TermDetail, AppRoutes.ClosedTerm).forEach { ruta ->
+                screen("$ruta/{termId}") { backStackEntry ->
+                    TermDetailScreen(
+                        termId = backStackEntry.arguments?.getString("termId").orEmpty(),
+                        onBackClick = {
+                            if (!navController.navigateUp()) {
+                                navController.go(AppRoutes.AcademicHistory)
+                            }
+                        },
+                        onSubjectClick = { subjectId -> navController.go(AppRoutes.termSubject(subjectId)) },
+                        onBulletinClick = { id -> navController.go(AppRoutes.termBulletin(id)) },
+                        onEditGrades = { subjectId -> navController.go(AppRoutes.termEditGrades(subjectId)) },
+                        onCloseTermClick = {
+                            navController.navigate(AppRoutes.TermClose) { launchSingleTop = true }
+                        }
+                    )
+                }
+            }
+            screen("${AppRoutes.TermSubject}/{subjectId}") { backStackEntry ->
+                TermSubjectScreen(
+                    subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty(),
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicHistory)
+                        }
+                    },
+                    onEditGrades = { subjectId -> navController.go(AppRoutes.termEditGrades(subjectId)) },
+                    onSubjectClick = { subjectId -> navController.go(AppRoutes.termSubject(subjectId)) }
+                )
+            }
+            screen("${AppRoutes.TermEditGrades}/{subjectId}") { backStackEntry ->
+                TermEditGradesScreen(
+                    subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty(),
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicHistory)
+                        }
+                    },
+                    onSaved = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicHistory)
+                        }
+                    }
+                )
+            }
+            screen("${AppRoutes.TermBulletin}/{termId}") { backStackEntry ->
+                TermBulletinScreen(
+                    termId = backStackEntry.arguments?.getString("termId").orEmpty(),
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicHistory)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.ModuleSettings) {
+                ModuleSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.NotificationSettings) {
+                NotificationSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.DataSettings) {
+                DataSettingsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.Settings)
+                        }
+                    }
+                )
+            }
+            screen(AppRoutes.WhatsNew) {
+                WhatsNewScreen(onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) })
+            }
+            screen(AppRoutes.Resources) {
+                ResourcesScreen(onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) })
+            }
+            screen(AppRoutes.Help) {
+                HelpScreen(onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) })
+            }
+            screen(AppRoutes.About) {
+                AboutScreen(
+                    onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) },
+                    onLicensesClick = { navController.go(AppRoutes.Licenses) },
+                    onWhatsNewClick = { navController.go(AppRoutes.updateVersion(BuildConfig.VERSION_NAME)) }
+                )
+            }
+            screen(AppRoutes.Licenses) {
+                LicensesScreen(onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.About) })
+            }
+            screen(AppRoutes.GpaCalculator) {
+                GpaCalculatorScreen(onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) })
+            }
+            screen(AppRoutes.QuickNotes) {
+                NotesListScreen(
+                    onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) },
+                    onNoteClick = { noteId -> navController.go(AppRoutes.noteEditor(noteId)) },
+                    onNewNoteClick = { tipo -> navController.go(AppRoutes.newNote(tipo.route)) }
+                )
+            }
+            screen(
+                AppRoutes.NewNoteWithStart,
+                arguments = listOf(
+                    navArgument(AppRoutes.NewNoteStartArg) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument(AppRoutes.NewNoteSubjectArg) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                )
+            ) { backStackEntry ->
+                NoteEditorScreen(
+                    noteId = null,
+                    start = NewNoteStart.of(
+                        backStackEntry.arguments?.getString(AppRoutes.NewNoteStartArg)
+                    ),
+                    initialSubjectId = backStackEntry.arguments?.getString(AppRoutes.NewNoteSubjectArg),
+                    onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.QuickNotes) }
+                )
+            }
+            screen("${AppRoutes.NoteEditor}/{noteId}") { backStackEntry ->
+                NoteEditorScreen(
+                    noteId = backStackEntry.arguments?.getString("noteId"),
+                    onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.QuickNotes) }
+                )
+            }
+            screen(AppRoutes.ExpenseInsights) {
+                ExpenseInsightsScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) navController.go(AppRoutes.Expenses)
+                    }
+                )
+            }
+            screen(AppRoutes.AiAssistant) {
+                AiAssistantScreen(onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) })
+            }
+            screen(AppRoutes.Labs) {
+                LabsScreen(onBackClick = { if (!navController.navigateUp()) navController.go(AppRoutes.Home) })
+            }
+            screen(AppRoutes.StudentFees) {
+                com.leoaristocrat.semesta.feature_expenses.presentation.StudentFeesScreen(onBackClick = { navController.navigateBackOr(AppRoutes.Expenses, enabledModules) })
+            }
+            screen(AppRoutes.Expenses) {
+                ExpensesScreen(
+                    onAddExpenseClick = { navController.navigateIfModuleEnabled(AppRoutes.AddExpense, enabledModules) },
+                    onEditExpenseClick = { expenseId -> navController.navigateIfModuleEnabled(AppRoutes.editExpense(expenseId), enabledModules) },
+                    onFeesClick = { navController.navigateIfModuleEnabled(AppRoutes.StudentFees, enabledModules) },
+                    onInsightsClick = { navController.navigateIfModuleEnabled(AppRoutes.ExpenseInsights, enabledModules) }
+                )
+            }
+            screen(AppRoutes.AddSubject) {
+                SubjectFormScreen(
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.academic(AppRoutes.AcademicTabSubjects), enabledModules)
+                    },
+                    onSubjectSaved = { subjectId ->
+                        navController.navigate(AppRoutes.subjectDetail(subjectId)) {
+                            popUpTo(AppRoutes.AddSubject) {
+                                inclusive = true
+                            }
+                        }
+                    }
+                )
+            }
+            // Las dos rutas de Horario: el mismo formulario, con el bloque académico plegado
+            // y volviendo al calendario en vez de al detalle de la materia.
+            screen(AppRoutes.AddSubjectFromSchedule) {
+                SubjectFormScreen(
+                    mode = SubjectFormMode.SCHEDULE,
+                    onBackClick = { navController.navigateBackOr(AppRoutes.Calendar, enabledModules) },
+                    onSubjectSaved = { navController.navigateBackOr(AppRoutes.Calendar, enabledModules) }
+                )
+            }
+            screen("${AppRoutes.EditSubjectFromSchedule}/{subjectId}") { backStackEntry ->
+                SubjectFormScreen(
+                    subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty(),
+                    mode = SubjectFormMode.SCHEDULE,
+                    onBackClick = { navController.navigateBackOr(AppRoutes.Calendar, enabledModules) },
+                    onSubjectSaved = { navController.navigateBackOr(AppRoutes.Calendar, enabledModules) }
+                )
+            }
+            screen(AppRoutes.AddSubjectFromTask) {
+                SubjectFormScreen(
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.navigateIfModuleEnabled(AppRoutes.AddTask, enabledModules)
+                        }
+                    },
+                    onSubjectSaved = {
+                        if (!navController.navigateUp()) {
+                            navController.navigateIfModuleEnabled(AppRoutes.AddTask, enabledModules)
+                        }
+                    }
+                )
+            }
+            screen("${AppRoutes.SubjectDetail}/{subjectId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                SubjectDetailScreen(
+                    subjectId = subjectId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.academic(AppRoutes.AcademicTabSubjects), enabledModules)
+                    },
+                    onCutClick = { id, cutId -> navController.navigateIfModuleEnabled(AppRoutes.subjectCutDetail(id, cutId), enabledModules) },
+                    onStatsClick = { id -> navController.navigateIfModuleEnabled(AppRoutes.subjectStats(id), enabledModules) },
+                    onEditSubjectClick = { id -> navController.navigateIfModuleEnabled(AppRoutes.editSubject(id), enabledModules) },
+                    onEditGradeClick = { id, gradeId -> navController.navigateIfModuleEnabled(AppRoutes.editGrade(id, gradeId), enabledModules) },
+                    onCompleteHistoryClick = { id ->
+                        navController.navigateIfModuleEnabled(AppRoutes.priorHistory(id), enabledModules)
+                    },
+                    onNewNoteClick = { id ->
+                        navController.go(AppRoutes.newNote(NewNoteStart.TEXTO.route, id))
+                    },
+                    onSubjectDeleted = {
+                        if (!navController.popBackStack(AppRoutes.Academic, inclusive = false)) {
+                            navController.navigate(AppRoutes.academic(AppRoutes.AcademicTabSubjects)) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    inclusive = false
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+                    },
+                    onTaskClick = { taskId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.editTask(taskId), enabledModules)
+                    }
+                )
+            }
+            screen("${AppRoutes.PriorHistory}/{subjectId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                PriorHistoryScreen(
+                    subjectId = subjectId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    },
+                    onAddActivitiesClick = { id, cutId ->
+                        navController.navigateIfModuleEnabled(
+                            AppRoutes.addGradeFromHistory(id, cutId),
+                            enabledModules
+                        )
+                    }
+                )
+            }
+            screen("${AppRoutes.SubjectStats}/{subjectId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                SubjectStatsScreen(
+                    subjectId = subjectId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    }
+                )
+            }
+            screen("${AppRoutes.SubjectCutDetail}/{subjectId}/{periodId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                val cutId = backStackEntry.arguments?.getString("periodId").orEmpty()
+                SubjectCutDetailScreen(
+                    subjectId = subjectId,
+                    cutId = cutId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    },
+                    onEditGradeClick = { id, gradeId -> navController.navigateIfModuleEnabled(AppRoutes.editGrade(id, gradeId), enabledModules) }
+                )
+            }
+            screen("${AppRoutes.EditSubject}/{subjectId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                SubjectFormScreen(
+                    subjectId = subjectId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    },
+                    onSubjectSaved = { id ->
+                        if (!navController.navigateUp()) {
+                            navController.navigateIfModuleEnabled(AppRoutes.subjectDetail(id), enabledModules)
+                        }
+                    }
+                )
+            }
+            screen("${AppRoutes.AddGrade}/{subjectId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                AddGradeScreen(
+                    subjectId = subjectId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    },
+                    onCompleteHistoryClick = { id ->
+                        navController.navigate(AppRoutes.priorHistory(id)) {
+                            popUpTo(AppRoutes.AddGrade) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            screen("${AppRoutes.AddGrade}/{subjectId}/{periodId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                val cutId = backStackEntry.arguments?.getString("periodId").orEmpty()
+                AddGradeScreen(
+                    subjectId = subjectId,
+                    initialCutId = cutId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.subjectCutDetail(subjectId, cutId), enabledModules)
+                    },
+                    onCompleteHistoryClick = { id ->
+                        navController.go(AppRoutes.priorHistory(id))
+                    }
+                )
+            }
+            screen("${AppRoutes.AddGradeFromHistory}/{subjectId}/{periodId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                val cutId = backStackEntry.arguments?.getString("periodId").orEmpty()
+                AddGradeScreen(
+                    subjectId = subjectId,
+                    initialCutId = cutId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.priorHistory(subjectId), enabledModules)
+                    }
+                )
+            }
+            screen("${AppRoutes.EditGrade}/{subjectId}/{gradeId}") { backStackEntry ->
+                val subjectId = backStackEntry.arguments?.getString("subjectId").orEmpty()
+                val gradeId = backStackEntry.arguments?.getString("gradeId").orEmpty()
+                AddGradeScreen(
+                    subjectId = subjectId,
+                    gradeId = gradeId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    }
+                )
+            }
+            screen(AppRoutes.AddTask) {
+                AddTaskScreen(
+                    onBackClick = { navController.navigateBackOr(AppRoutes.academic(AppRoutes.AcademicTabTasks), enabledModules) },
+                    onCreateSubjectClick = { navController.navigateIfModuleEnabled(AppRoutes.AddSubjectFromTask, enabledModules) }
+                )
+            }
+            screen("${AppRoutes.EditTask}/{taskId}") { backStackEntry ->
+                val taskId = backStackEntry.arguments?.getString("taskId").orEmpty()
+                AddTaskScreen(
+                    taskId = taskId,
+                    onCreateSubjectClick = { navController.navigateIfModuleEnabled(AppRoutes.AddSubjectFromTask, enabledModules) },
+                    onEditLinkedGrade = { subjectId, gradeId ->
+                        navController.navigateIfModuleEnabled(
+                            AppRoutes.editGrade(subjectId, gradeId),
+                            enabledModules
+                        )
+                    },
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.academic(AppRoutes.AcademicTabTasks), enabledModules)
+                    }
+                )
+            }
+            screen("${AppRoutes.TaskDetail}/{taskId}") { backStackEntry ->
+                val taskId = backStackEntry.arguments?.getString("taskId").orEmpty()
+                com.leoaristocrat.semesta.feature_tasks.presentation.TaskDetailScreen(
+                    taskId = taskId,
+                    onBackClick = { navController.navigateUp() },
+                    onSubjectClick = { subjectId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.subjectDetail(subjectId), enabledModules)
+                    },
+                    onEditTaskClick = { editId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.editTask(editId), enabledModules)
+                    },
+                    onOpenTaskClick = { openId ->
+                        navController.navigateIfModuleEnabled(AppRoutes.taskDetail(openId), enabledModules)
+                    }
+                )
+            }
+            screen(AppRoutes.AddExpense) {
+                AddExpenseScreen(onBackClick = { navController.navigateBackOr(AppRoutes.Expenses, enabledModules) })
+            }
+            screen("${AppRoutes.EditExpense}/{expenseId}") { backStackEntry ->
+                val expenseId = backStackEntry.arguments?.getString("expenseId").orEmpty()
+                AddExpenseScreen(
+                    expenseId = expenseId,
+                    onBackClick = {
+                        navController.navigateBackOr(AppRoutes.Expenses, enabledModules)
+                    }
+                )
+            }
+            screen(AppRoutes.AcademicTemplates) {
+                com.leoaristocrat.semesta.feature_rooms.presentation.RoomsText {
+                    com.leoaristocrat.semesta.feature_rooms.presentation.RoomsHomeScreen(
+                        onBackClick = {
+                            if (!navController.navigateUp()) {
+                                navController.go(AppRoutes.Home)
+                            }
+                        },
+                        onOpenRoom = { roomId -> navController.go(AppRoutes.room(roomId)) },
+                        onCreateRoom = { navController.go(AppRoutes.RoomsCreate) }
+                    )
+                }
+            }
+            screen(AppRoutes.RoomsCreate) {
+                com.leoaristocrat.semesta.feature_rooms.presentation.RoomsText {
+                    com.leoaristocrat.semesta.feature_rooms.presentation.CreateRoomScreen(
+                        onBackClick = { navController.navigateUp() },
+                        onCreated = { roomId ->
+                            navController.navigateUp()
+                            navController.go(AppRoutes.room(roomId, "invitar"))
+                        }
+                    )
+                }
+            }
+            screen(
+                route = AppRoutes.Room,
+                arguments = listOf(
+                    navArgument(AppRoutes.RoomIdArg) { type = NavType.StringType },
+                    navArgument(AppRoutes.RoomSectionArg) { type = NavType.StringType },
+                    navArgument(AppRoutes.RoomItemArg) { type = NavType.StringType }
+                )
+            ) { entry ->
+                com.leoaristocrat.semesta.feature_rooms.presentation.RoomsText {
+                    com.leoaristocrat.semesta.feature_rooms.presentation.RoomRouter(
+                        roomId = entry.arguments?.getString(AppRoutes.RoomIdArg).orEmpty(),
+                        section = entry.arguments?.getString(AppRoutes.RoomSectionArg).orEmpty(),
+                        item = entry.arguments?.getString(AppRoutes.RoomItemArg).orEmpty(),
+                        onBack = {
+                            if (!navController.navigateUp()) navController.go(AppRoutes.AcademicTemplates)
+                        },
+                        /*
+                         * **Cada sección va encima de la sala, no en su lugar.** Todas comparten la misma
+                         * ruta con parámetros, y `go` (que no apila la misma pantalla dos veces) reemplazaba
+                         * la sala por el chat o el grupo: atrás sacaba de Trabajos. Aquí se apila siempre,
+                         * salvo que ya estés en esa misma sección; y volver a «sala» desde una sección que
+                         * cuelga de ella es simplemente volver atrás.
+                         */
+                        onNavigate = { roomId, section, item ->
+                            val cur = navController.currentBackStackEntry?.arguments
+                            val same = cur?.getString(AppRoutes.RoomIdArg) == roomId &&
+                                cur.getString(AppRoutes.RoomSectionArg) == section &&
+                                cur.getString(AppRoutes.RoomItemArg).orEmpty() == item
+                            val prev = navController.previousBackStackEntry?.arguments
+                            when {
+                                same -> Unit
+                                section == "sala" && prev?.getString(AppRoutes.RoomIdArg) == roomId &&
+                                    prev.getString(AppRoutes.RoomSectionArg) == "sala" -> navController.navigateUp()
+                                else -> navController.navigate(AppRoutes.room(roomId, section, item))
+                            }
+                        },
+                        onReplace = { roomId, section, item ->
+                            navController.navigateUp()
+                            navController.go(AppRoutes.room(roomId, section, item))
+                        },
+                        // La sala ya no existe (borrada o abandonada): de un salto a Trabajos.
+                        onGone = {
+                            if (!navController.popBackStack(AppRoutes.AcademicTemplates, inclusive = false)) {
+                                navController.go(AppRoutes.AcademicTemplates)
+                            }
+                        }
+                    )
+                }
+            }
+            screen(
+                route = AppRoutes.AcademicWork,
+                arguments = listOf(navArgument(AppRoutes.AcademicWorkArg) { type = NavType.StringType })
+            ) { entry ->
+                AcademicWorkScreen(
+                    workId = entry.arguments?.getString(AppRoutes.AcademicWorkArg).orEmpty(),
+                    onBackClick = {
+                        if (!navController.navigateUp()) {
+                            navController.go(AppRoutes.AcademicTemplates)
+                        }
+                    }
+                )
+            }
+        }
+
+
+        }
+    }
+    }
+}
+
+/**
+ * La ruta en la que está la app ahora mismo.
+ *
+ * `currentBackStackEntryAsState` arranca en `null`: empieza a recoger el flujo de destinos
+ * *después* de componer, así que en el primer fotograma no hay entrada todavía. Quien caía de
+ * ahí directo a Inicio pintaba Inicio durante ese fotograma y saltaba a la pestaña de verdad en
+ * el siguiente, con la animación del indicador de por medio.
+ *
+ * Se notaba al salir de un formulario: esas rutas esconden la barra, así que al volver la barra
+ * se compone desde cero y su primer fotograma decía Inicio. El indicador cruzaba de Inicio a la
+ * sección delante del usuario, como si la app hubiera pasado por la pantalla de inicio.
+ *
+ * El destino del propio NavController sí se puede leer en el acto, y es el mismo dato.
+ */
+@Composable
+private fun NavHostController.currentRouteAsState(): String? {
+    val entry by currentBackStackEntryAsState()
+    return entry?.destination?.route ?: currentDestination?.route
+}
+
+@Composable
+private fun ModuleAccessGuard(
+    navController: NavHostController,
+    enabledModules: Set<AppModule>
+) {
+    val currentRoute = navController.currentRouteAsState() ?: AppRoutes.Home
+
+    LaunchedEffect(currentRoute, enabledModules) {
+        val module = moduleForRoute(currentRoute)
+        if (module != null && module !in enabledModules) {
+            navController.navigate(AppRoutes.Home) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    inclusive = false
+                }
+                launchSingleTop = true
+            }
+        }
+    }
+}
+
+/**
+ * Rutas que se comportan como una tarea y no como un destino: crear y editar.
+ *
+ * Son las únicas que ocultan la barra inferior. Fuera de aquí, cualquier pantalla que
+ * pertenezca a una sección la conserva, para que se vea dónde estás y se pueda cambiar de
+ * sección sin tener que desandar el camino.
+ *
+ * El motivo de esconderla aquí no es estético: con la barra puesta, un toque en cualquier
+ * pestaña abandona un formulario a medio llenar sin decir nada. Mientras no haya un aviso
+ * antes de descartar, la salida de un formulario se queda en atrás o guardar.
+ */
+/**
+ * Las pantallas que se abren desde el panel lateral.
+ *
+ * Van a pantalla completa, sin barra inferior. No son secciones de la app sino sitios a los que
+ * se entra y de los que se sale por donde se vino: dejarles la barra invita a saltar a otra
+ * pestaña a medio leer, y sobre todo las achata —una pantalla que ocupa todo se lee como un
+ * sitio propio y no como una capa encima de Inicio.
+ */
+private val ImmersiveRoutes = setOf(
+    AppRoutes.WhatsNew,
+    AppRoutes.Resources,
+    AppRoutes.Help,
+    AppRoutes.About,
+    AppRoutes.GpaCalculator,
+    AppRoutes.QuickNotes,
+    AppRoutes.NewNote,
+    AppRoutes.NoteEditor,
+    AppRoutes.AiAssistant,
+    AppRoutes.Labs
+)
+
+private val ModalRoutes = setOf(
+    AppRoutes.AddSubject,
+    AppRoutes.AddSubjectFromTask,
+    AppRoutes.AddSubjectFromSchedule,
+    AppRoutes.EditSubject,
+    AppRoutes.EditSubjectFromSchedule,
+    AppRoutes.AddGrade,
+    AppRoutes.AddGradeFromHistory,
+    AppRoutes.EditGrade,
+    AppRoutes.AddTask,
+    AppRoutes.EditTask,
+    AppRoutes.TaskDetail,
+    AppRoutes.AddExpense,
+    AppRoutes.EditExpense,
+    // Los flujos del histórico llevan su botón anclado abajo, donde iría la barra.
+    AppRoutes.TermClose,
+    AppRoutes.NewTerm,
+    AppRoutes.TermEditGrades,
+    AppRoutes.TermBulletin
+)
+
+/**
+ * Si una ruta muestra la barra inferior.
+ *
+ * Se deriva de [bottomRouteFor] en vez de mantener una lista aparte. Antes eran dos fuentes
+ * de verdad que no se hablaban: el mapa sabía que «agregar nota» pertenece a Académico, pero
+ * la lista blanca de rutas con barra se escribía a mano y solo cubría siete. De las 29 rutas
+ * mapeadas, veintidós calculaban su pestaña para nada.
+ *
+ * De paso corrige el salto que eso producía: el detalle de una materia es una pantalla de
+ * consulta igual que su lista, y se quedaba sin barra mientras la lista la tenía.
+ */
+internal fun routeShowsBottomBar(route: String?): Boolean {
+    if (ModalRoutes.any { routeBelongsTo(route, it) }) return false
+    if (ImmersiveRoutes.any { routeBelongsTo(route, it) }) return false
+    return bottomRouteFor(route) != null
+}
+
+/**
+ * Si el cambio es entre dos pestañas de la barra de abajo.
+ *
+ * Esas no se empujan: la barra no es una pila, es un conmutador. Deslizar entre ellas cuenta
+ * un viaje que no ocurre —Gastos no está «a la derecha» de Inicio— y al pulsar rápido convierte
+ * la barra en un carrusel. El empuje se reserva para entrar y salir de una pantalla, que sí es
+ * ir hacia dentro y volver.
+ *
+ * Es decisión suya, y se reafirmó el 17 sep 2026 después de probar las pestañas animadas: «yo
+ * quise que así fuera».
+ */
+private fun isTabSwitch(
+    initial: androidx.navigation.NavBackStackEntry,
+    target: androidx.navigation.NavBackStackEntry
+): Boolean {
+    return isBottomRoot(initial.destination.route) && isBottomRoot(target.destination.route)
+}
+
+/**
+ * Si una ruta es la raíz de una pestaña y no algo abierto dentro de ella.
+ *
+ * Se compara sin los argumentos: Académico está registrado como `academic?tab={tab}`, así que
+ * comparar la ruta entera nunca coincidía con su propia raíz y el cambio de pestaña se seguía
+ * empujando.
+ */
+private fun isBottomRoot(route: String?): Boolean {
+    if (route == null) return false
+    val base = route.substringBefore('?')
+    return bottomRouteFor(base) == base
+}
+
+internal fun bottomRouteFor(route: String?): String? {
+    return when {
+        routeBelongsTo(route, AppRoutes.Home) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.Notifications) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.NotificationDetail) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.Academic) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.Grades) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.AddSubject) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.AddSubjectFromTask) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.SubjectDetail) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.SubjectStats) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.SubjectCutDetail) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.EditSubject) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.AddGrade) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.AddGradeFromHistory) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.EditGrade) -> AppRoutes.Academic
+        // Faltaban las dos del historial. Sin mapear, la de consulta se quedaba sin barra
+        // por omisión y no por decisión, que es justo lo que este cambio viene a corregir.
+        routeBelongsTo(route, AppRoutes.PriorHistory) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.Tasks) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.AddTask) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.EditTask) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.TaskDetail) -> AppRoutes.Academic
+        routeBelongsTo(route, AppRoutes.Expenses) -> AppRoutes.Expenses
+        routeBelongsTo(route, AppRoutes.ExpenseInsights) -> AppRoutes.Expenses
+        routeBelongsTo(route, AppRoutes.AddExpense) -> AppRoutes.Expenses
+        routeBelongsTo(route, AppRoutes.EditExpense) -> AppRoutes.Expenses
+        routeBelongsTo(route, AppRoutes.Profile) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.Settings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AppearanceSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.ThemeSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.SurfaceSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.TypographySettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.ComponentSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.HomeSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.MotionSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AccessibilitySettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.Calendar) -> AppRoutes.Calendar
+        // El formulario de materia abierto desde Horario pertenece a Horario, que es a donde
+        // vuelve al guardar. Sin esto se quedaría sin pestaña y la transición entraría por el
+        // lado que no toca.
+        routeBelongsTo(route, AppRoutes.AddSubjectFromSchedule) -> AppRoutes.Calendar
+        routeBelongsTo(route, AppRoutes.EditSubjectFromSchedule) -> AppRoutes.Calendar
+        routeBelongsTo(route, AppRoutes.AcademicSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AcademicScale) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AcademicCuts) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AcademicAbsence) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AcademicBreaks) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AcademicTerm) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.AcademicHistory) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.ClosedTerm) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.TermDetail) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.TermSubject) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.TermEditGrades) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.TermBulletin) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.TermClose) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.NewTerm) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.ModuleSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.NotificationSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.DataSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.UpdateSettings) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.UpdateHistory) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.UpdateVersion) -> AppRoutes.Settings
+        routeBelongsTo(route, AppRoutes.WhatsNew) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.Resources) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.Help) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.About) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.GpaCalculator) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.QuickNotes) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.NewNote) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.NoteEditor) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.AiAssistant) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.Labs) -> AppRoutes.Home
+        routeBelongsTo(route, AppRoutes.AcademicTemplates) -> AppRoutes.Home
+        else -> null
+    }
+}
+
+/**
+ * Módulo del que depende una ruta, para no dejar accesible lo que el usuario apagó.
+ *
+ * Las dos rutas de materia que salen de Horario quedan fuera a propósito. Crear una clase
+ * crea una materia por debajo, pero Horario es una pestaña fija que sigue estando cuando
+ * Académico está apagado: atarlas a [AppModule.GRADES] convertiría «Añadir clase» en un
+ * botón que lleva a Inicio.
+ */
+internal fun moduleForRoute(route: String?): AppModule? {
+    return when {
+        routeBelongsTo(route, AppRoutes.Grades) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.AddSubject) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.AddSubjectFromTask) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.SubjectDetail) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.SubjectStats) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.SubjectCutDetail) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.EditSubject) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.AddGrade) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.EditGrade) -> AppModule.GRADES
+        routeBelongsTo(route, AppRoutes.Tasks) -> AppModule.TASKS
+        routeBelongsTo(route, AppRoutes.AddTask) -> AppModule.TASKS
+        routeBelongsTo(route, AppRoutes.EditTask) -> AppModule.TASKS
+        routeBelongsTo(route, AppRoutes.TaskDetail) -> AppModule.TASKS
+        routeBelongsTo(route, AppRoutes.Expenses) -> AppModule.EXPENSES
+        routeBelongsTo(route, AppRoutes.StudentFees) -> AppModule.EXPENSES
+        routeBelongsTo(route, AppRoutes.AddExpense) -> AppModule.EXPENSES
+        routeBelongsTo(route, AppRoutes.EditExpense) -> AppModule.EXPENSES
+        routeBelongsTo(route, AppRoutes.AcademicTemplates) -> AppModule.ACADEMIC_TEMPLATES
+        routeBelongsTo(route, AppRoutes.RoomsCreate) -> AppModule.ACADEMIC_TEMPLATES
+        routeBelongsTo(route, AppRoutes.Room) -> AppModule.ACADEMIC_TEMPLATES
+        else -> null
+    }
+}
+
+/**
+ * Un destino del grafo, dibujado en su capa.
+ *
+ * La pantalla que entra se dibujaba **por detrás** de la que sale, así que el empuje se veía al
+ * revés de lo que cuenta: en vez de una hoja nueva tapando a la anterior, parecía que la
+ * anterior se apartaba para dejar ver algo que ya estaba puesto debajo.
+ *
+ * El orden de las capas lo pone el propio `NavHost`: al entrar, la nueva se pinta encima; al
+ * volver, la que se va sigue encima mientras se retira, que es lo que hace que se lea como
+ * retirar una hoja. Lo que falta para que eso se vea es el fondo opaco de aquí.
+ */
+private fun NavGraphBuilder.screen(
+    route: String,
+    arguments: List<NamedNavArgument> = emptyList(),
+    content: @Composable AnimatedContentScope.(NavBackStackEntry) -> Unit
+) {
+    composable(route = route, arguments = arguments) { entry ->
+        // Fondo propio y opaco. Es la condicion para que el empuje se lea: sin el, durante
+        // el deslizamiento se ve la pantalla de debajo a traves de la de encima.
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                Box(Modifier.widthIn(max = if (route == AppRoutes.Home) SemestaTokens.WorkspaceWidth else SemestaTokens.ReadingWidth).fillMaxSize()) {
+                    content(entry)
+                }
+            }
+        }
+    }
+}
+
+private fun NavHostController.navigateToBottomRoute(
+    currentRoute: String?,
+    targetRoute: String
+) {
+    if (currentRoute == targetRoute) return
+
+    val targetIsCurrentSection = bottomRouteFor(currentRoute) == targetRoute
+    if (targetIsCurrentSection && popBackStack(targetRoute, inclusive = false)) {
+        return
+    }
+
+    if (targetRoute == AppRoutes.Home && popBackStack(AppRoutes.Home, inclusive = false)) {
+        return
+    }
+
+    if (targetRoute != AppRoutes.Home && popBackStack(targetRoute, inclusive = false)) {
+        return
+    }
+
+    navigate(targetRoute) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        /*
+         * Cambiar de pestaña te deja en su pantalla principal, no donde lo dejaste.
+         *
+         * Con `restoreState` puesto, la barra devolvía la pila entera de la pestaña: si salías
+         * de Ajustes estando dentro de Apariencia, al volver a Ajustes aparecía Apariencia. No
+         * es lo que promete un botón que dice «Ajustes» y lleva el icono de Ajustes, y además
+         * la transición se hacía entre dos pantallas que no están al mismo nivel, así que se
+         * veía como si la app se hubiera saltado un paso.
+         *
+         * Volver donde lo dejaste sigue funcionando dentro de la propia pestaña: tocar la
+         * pestaña en la que ya estás sube a su raíz, y el botón de atrás deshace el camino.
+         */
+        restoreState = false
+    }
+}
+
+private fun NavHostController.navigateIfModuleEnabled(
+    route: String,
+    enabledModules: Set<AppModule>
+) {
+    val module = moduleForRoute(route)
+    val blocked = (module != null && module !in enabledModules) || !routeIsBuilt(route)
+    navigate(if (blocked) AppRoutes.Home else route) {
+        launchSingleTop = true
+    }
+}
+
+/**
+ * Rutas que todavía no están terminadas.
+ *
+ * Fuera de dev y alpha no se entra a ninguna, venga el toque de donde venga: el panel las pinta
+ * apagadas, pero una notificación con ruta guardada o un enlace de arranque también llegan
+ * aquí. La puerta se cierra en un solo sitio.
+ */
+private val UnfinishedRoutes = setOf(
+    AppRoutes.AcademicTemplates,
+    AppRoutes.RoomsCreate,
+    AppRoutes.Room,
+    AppRoutes.AiAssistant,
+    AppRoutes.Labs
+)
+
+internal fun routeIsBuilt(route: String?): Boolean {
+    if (BuildStage.of(BuildConfig.VERSION_NAME).allowsUnfinished) return true
+    return UnfinishedRoutes.none { routeBelongsTo(route, it) }
+}
+
+/**
+ * Navega a una pantalla sin apilarla dos veces.
+ *
+ * Sin `launchSingleTop`, tocar dos veces la misma fila —de ajustes, del panel, de donde sea—
+ * mete dos copias en la pila, y para salir hay que dar atrás tantas veces como toques se
+ * dieron. No hay ningún sitio de la app donde apilar la misma pantalla sobre sí misma
+ * signifique algo.
+ */
+private fun NavHostController.go(route: String) {
+    navigate(route) { launchSingleTop = true }
+}
+
+private fun NavHostController.navigateBackOr(
+    fallbackRoute: String,
+    enabledModules: Set<AppModule>
+) {
+    if (!navigateUp()) {
+        navigateIfModuleEnabled(fallbackRoute, enabledModules)
+    }
+}
+
+/**
+ * Reenvía a Académico en la pestaña indicada y se quita del historial.
+ *
+ * Sirve a las rutas antiguas de Materias y Tareas, que ya no tienen pantalla propia pero
+ * siguen llegando desde recordatorios agendados antes de este cambio. Se sustituye a sí misma
+ * en la pila para que el botón atrás no devuelva a una pantalla que solo redirige.
+ */
+@Composable
+private fun RedirectToAcademic(navController: NavHostController, tab: String) {
+    LaunchedEffect(tab) {
+        navController.navigate(AppRoutes.academic(tab)) {
+            popUpTo(AppRoutes.Home)
+            launchSingleTop = true
+        }
+    }
+}
+
+private fun routeBelongsTo(route: String?, baseRoute: String): Boolean {
+    return route == baseRoute ||
+        route?.startsWith("$baseRoute/") == true ||
+        // Rutas con argumento opcional: el patrón que informa el destino es
+        // «academic?tab={tab}», que no es igual a «academic» ni empieza por «academic/».
+        // Sin esta rama, una ruta así deja de pertenecer a su pestaña y pierde la barra.
+        route?.startsWith("$baseRoute?") == true
+}
+
+@Composable
+fun SemestaBottomBar(
+    navController: NavHostController,
+    modifier: Modifier = Modifier,
+    items: List<BottomNavItem> = BottomNavItem.items,
+    rail: Boolean = false
+) {
+    val currentRoute = navController.currentRouteAsState() ?: AppRoutes.Home
+    val selectedBottomRoute = bottomRouteFor(currentRoute)
+    val showBottomBar = selectedBottomRoute != null && items.any { it.route == selectedBottomRoute }
+
+    // Las entregas sin completar, para el punto de aviso sobre Académico. Se cuenta aquí y no
+    // en cada pestaña porque el número es uno solo y la barra ya está en todas.
+    val tasksRepository = rememberSemestaEntryPoint().tasksRepository()
+    val pendingTasks by remember {
+        tasksRepository.tasks
+            .map { tasks -> tasks.count { !it.completed } }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(
+        initialValue = 0
+    )
+
+    if (showBottomBar) {
+        SemestaPrimaryNavigation(
+            rail = rail,
+            selectedRoute = selectedBottomRoute ?: currentRoute,
+            items = items,
+            pendingTasks = pendingTasks,
+            onNavigate = { route ->
+                navController.navigateToBottomRoute(
+                    currentRoute = currentRoute,
+                    targetRoute = route
+                )
+            },
+            modifier = modifier
+        )
+    }
+}
+
+/** «4 periodos cerrados · acumulado 4.02», lo que dice la fila del histórico en Ajustes. */
+private fun historySubtitle(cerrados: Int, acumulado: Double?, notaMaxima: Double): String {
+    val periodos = if (cerrados == 1) {
+        com.leoaristocrat.semesta.core.utils.Textos.get(com.leoaristocrat.semesta.R.string.hist_cerrado_uno)
+    } else {
+        com.leoaristocrat.semesta.core.utils.Textos.get(com.leoaristocrat.semesta.R.string.hist_cerrado_varios, cerrados)
+    }
+    return if (acumulado == null) {
+        periodos
+    } else {
+        com.leoaristocrat.semesta.core.utils.Textos.get(
+            com.leoaristocrat.semesta.R.string.hist_ajustes_subtitulo,
+            periodos,
+            com.leoaristocrat.semesta.feature_terms.presentation.formatoDePromedio(acumulado, notaMaxima)
+        )
+    }
+}

@@ -1,0 +1,427 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.leoaristocrat.semesta.feature_profile.presentation
+
+import androidx.compose.foundation.layout.Arrangement
+import com.leoaristocrat.semesta.core.design.theme.tonosDeAjustes
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Animation
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material.icons.rounded.RoundedCorner
+import androidx.compose.material.icons.rounded.TextFields
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.leoaristocrat.semesta.R
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.leoaristocrat.semesta.core.design.components.LargeTitleScaffold
+import com.leoaristocrat.semesta.core.design.components.SettingsGroup
+import com.leoaristocrat.semesta.core.design.components.SettingsRow
+import com.leoaristocrat.semesta.core.design.theme.AppThemes
+import com.leoaristocrat.semesta.core.design.theme.LocalInterfaceSpacing
+import com.leoaristocrat.semesta.core.design.theme.LocalSectionColors
+import com.leoaristocrat.semesta.core.design.theme.SectionLabelStyle
+import com.leoaristocrat.semesta.core.design.theme.scrollBottomRoom
+import com.leoaristocrat.semesta.core.utils.greetingForNow
+import com.leoaristocrat.semesta.feature_user.domain.AppearancePreferences
+import com.leoaristocrat.semesta.feature_user.domain.BottomBarStyle
+import com.leoaristocrat.semesta.feature_user.domain.CornerStyle
+import com.leoaristocrat.semesta.feature_user.domain.HomeSection
+import com.leoaristocrat.semesta.feature_user.domain.InitialTab
+import com.leoaristocrat.semesta.feature_user.domain.InterfaceDensity
+import com.leoaristocrat.semesta.feature_user.domain.MotionCatalog
+import com.leoaristocrat.semesta.feature_user.domain.TypographyStyle
+import com.leoaristocrat.semesta.feature_user.domain.VisualPreference
+import com.leoaristocrat.semesta.core.utils.Textos
+
+/**
+ * Apariencia: un hub de cinco puertas, con la maqueta arriba.
+ *
+ * **Era una sola pantalla con seis grupos apilados** —modo, color, densidad y letra, detalles
+ * de la interfaz, tarjetas de inicio y lo que enseña el hero— que se recorría a base de scroll
+ * y donde el color se elegía en dos sitios a la vez: arriba «Tema y color» abría la pantalla de
+ * los veintiocho temas, y tres dedos más abajo un grupo «COLOR» ofrecía otra vez las mismas dos
+ * opciones. Elegir en uno dejaba al otro contando algo distinto.
+ *
+ * Ahora es el mismo arreglo que se hizo en **Configuración académica**: cada cosa en su puerta,
+ * y la fila diciendo qué hay elegido ahora mismo sin tener que entrar. Lo único que se queda
+ * aquí es la maqueta, porque es la razón de estar en esta pantalla: se toca algo detrás de
+ * cualquier puerta y al volver se ve el resultado sin salir de ajustes.
+ */
+@Composable
+fun AppearanceSettingsScreen(
+    onBackClick: () -> Unit,
+    onThemeClick: () -> Unit,
+    onSurfaceClick: () -> Unit,
+    onTypographyClick: () -> Unit,
+    onComponentsClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onMotionClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
+    val profile by viewModel.profile.collectAsStateWithLifecycle()
+    val spacing = LocalInterfaceSpacing.current
+    val sections = LocalSectionColors.current
+    val current = profile
+
+    LargeTitleScaffold(
+        title = stringResource(R.string.settings_appearance_title),
+        subtitle = stringResource(R.string.settings_appearance_subtitle),
+        onBackClick = onBackClick,
+        modifier = modifier,
+        horizontalPadding = spacing.screenHorizontal,
+        topPadding = 8.dp,
+        bottomPadding = scrollBottomRoom,
+        itemSpacing = 12.dp
+    ) {
+        if (current == null) {
+            item {
+                Text(
+                    stringResource(R.string.settings_appearance_loading),
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            return@LargeTitleScaffold
+        }
+
+        val appearance = current.appearancePreferences
+        // Tres grupos por lo que se hace en cada uno, como en el diseño: cómo se ve, cómo se
+        // mueve, y qué sale en Inicio. Seis filas seguidas se leían como una sola cosa.
+        item {
+            SettingsGroup(label = stringResource(R.string.settings_appearance_group_look), rowCount = 4) {
+                SettingsRow(
+                    icon = Icons.Rounded.Palette,
+                    title = stringResource(R.string.settings_appearance_theme_title),
+                    // El resumen dice las dos cosas que decide esta puerta —el modo y el
+                    // tema— porque son las que más se cambian y las que más se olvida cuál
+                    // quedó puesta.
+                    subtitle = current.visualPreference.orSystem().label() + " · " +
+                        AppThemes.byId(appearance.themeId).name,
+                    iconColor = tonosDeAjustes.rosa,
+                    onClick = onThemeClick
+                )
+                SettingsRow(
+                    icon = Icons.Rounded.RoundedCorner,
+                    title = stringResource(R.string.settings_appearance_surface_title),
+                    subtitle = stringResource(
+                        R.string.settings_appearance_surface_sub,
+                        appearance.cornerStyle.label(),
+                        appearance.interfaceDensity.label().lowercase()
+                    ),
+                    iconColor = tonosDeAjustes.violeta,
+                    onClick = onSurfaceClick
+                )
+                SettingsRow(
+                    icon = Icons.Rounded.TextFields,
+                    title = stringResource(R.string.settings_appearance_typo_title),
+                    subtitle = appearance.typographyStyle.label() + " · " +
+                        stringResource(R.string.settings_typo_size_value, appearance.textScalePercent),
+                    iconColor = tonosDeAjustes.indigo,
+                    onClick = onTypographyClick
+                )
+                SettingsRow(
+                    icon = Icons.Rounded.Tune,
+                    title = stringResource(R.string.settings_appearance_components_title),
+                    subtitle = stringResource(
+                        R.string.settings_appearance_components_sub,
+                        appearance.settingsIconColor.label().lowercase(),
+                        appearance.bottomBarStyle.label().lowercase()
+                    ),
+                    iconColor = tonosDeAjustes.naranja,
+                    onClick = onComponentsClick
+                )
+            }
+        }
+        item {
+            SettingsGroup(label = stringResource(R.string.settings_appearance_group_motion), rowCount = 1) {
+                SettingsRow(
+                    icon = Icons.Rounded.Animation,
+                    title = stringResource(R.string.settings_appearance_motion_title),
+                    subtitle = stringResource(
+                        R.string.settings_appearance_motion_sub,
+                        MotionCatalog.gestures.size,
+                        MotionCatalog.variantCount
+                    ),
+                    iconColor = tonosDeAjustes.turquesa,
+                    onClick = onMotionClick
+                )
+            }
+        }
+        item {
+            SettingsGroup(label = stringResource(R.string.settings_appearance_group_home), rowCount = 1) {
+                SettingsRow(
+                    icon = Icons.Rounded.Home,
+                    title = stringResource(R.string.settings_appearance_home_title),
+                    subtitle = appearance.resumenDeInicio(),
+                    iconColor = tonosDeAjustes.azul,
+                    onClick = onHomeClick
+                )
+            }
+        }
+        item {
+            TextButton(
+                onClick = viewModel::resetAppearance,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Rounded.RestartAlt, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.settings_appearance_reset))
+            }
+        }
+    }
+}
+
+/** «3 de 8 bloques» y no la lista entera: en una fila no caben ocho nombres. */
+private fun AppearancePreferences.resumenDeInicio(): String {
+    val encendidos = HomeSection.entries.count(::showsSection)
+    val bloques = when (encendidos) {
+        0 -> Textos.get(R.string.settings_appearance_home_0_on)
+        else -> Textos.get(R.string.appearance_de_n_bloques, encendidos, HomeSection.entries.size)
+    }
+    val abre = Textos.get(
+        when (initialTab) {
+            InitialTab.HOME -> R.string.settings_home_tab_home
+            InitialTab.GRADES, InitialTab.TASKS -> R.string.settings_home_tab_academic
+            InitialTab.SCHEDULE -> R.string.settings_home_tab_schedule
+            InitialTab.EXPENSES -> R.string.settings_home_tab_expenses
+        }
+    )
+    return bloques + " · " + Textos.get(R.string.settings_appearance_home_opens_in, abre)
+}
+
+/** Los cuatro modos que se pueden elegir. */
+internal val VisiblePreferences = listOf(
+    VisualPreference.SYSTEM,
+    VisualPreference.LIGHT,
+    VisualPreference.DARK,
+    VisualPreference.OLED
+)
+
+internal fun VisualPreference.orSystem(): VisualPreference =
+    if (this in VisiblePreferences) this else VisualPreference.SYSTEM
+
+/**
+ * Tu inicio, en pequeño y de verdad.
+ *
+ * Lo que había antes eran tres rectángulos grises y una línea de texto que resumía los ajustes
+ * con palabras. No enseñaba nada: para saber cómo iba a quedar el inicio había que salir de
+ * aquí e ir a mirarlo. Esta maqueta enciende y apaga las mismas piezas que los interruptores
+ * de «Tu inicio», y el color y la letra son los del tema que esté puesto en ese momento.
+ */
+@Composable
+internal fun HomePreviewCard(
+    name: String,
+    photoUrl: String?,
+    appearance: AppearancePreferences
+) {
+    val shown = name.takeIf { it.isNotBlank() } ?: stringResource(R.string.settings_profile_student)
+
+    Column {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainer
+        ) {
+            Surface(
+                modifier = Modifier.padding(10.dp),
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(modifier = Modifier.padding(13.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // La maqueta enseña tu retrato, no una inicial genérica: es una vista
+                        // previa de tu Inicio, y el avatar es lo primero que se ve en él.
+                        AccountAvatar(
+                            photoUrl = photoUrl,
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp),
+                            initial = shown.first().uppercase()
+                        )
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                stringResource(R.string.app_name),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                        Spacer(Modifier.width(22.dp))
+                    }
+                    if (appearance.showHomeGreeting) {
+                        Text(
+                            text = (if (appearance.greetingWithTimeOfDay) greetingForNow() else stringResource(R.string.home_header_greeting_default)).uppercase(),
+                            modifier = Modifier.padding(top = 10.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            style = SectionLabelStyle
+                        )
+                        Text(
+                            text = shown,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.titleLargeEmphasized,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1
+                        )
+                    }
+                    if (appearance.showHomeHero) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 9.dp),
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+                                Text(stringResource(R.string.home_hero_later), style = SectionLabelStyle)
+                                Text(
+                                    stringResource(R.string.preview_sample_class_at_ten),
+                                    modifier = Modifier.padding(top = 2.dp),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Text(
+            text = stringResource(R.string.appearance_home_preview_caption),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
+}
+
+internal fun VisualPreference.label(): String {
+    return when (this) {
+        VisualPreference.SYSTEM -> Textos.get(R.string.appearance_sistema)
+        VisualPreference.LIGHT -> Textos.get(R.string.appearance_claro)
+        VisualPreference.DARK -> Textos.get(R.string.appearance_oscuro)
+        VisualPreference.OLED -> "OLED"
+        VisualPreference.CUSTOM -> Textos.get(R.string.appearance_personalizado)
+    }
+}
+
+internal fun VisualPreference.themeDescription(): String {
+    return when (this) {
+        VisualPreference.SYSTEM -> Textos.get(R.string.appearance_sigue_el_tema_de_android)
+        VisualPreference.LIGHT -> Textos.get(R.string.appearance_siempre_claro_aunque_android_este_oscuro)
+        VisualPreference.DARK -> Textos.get(R.string.appearance_siempre_oscuro_aunque_android_este_claro)
+        VisualPreference.OLED -> Textos.get(R.string.appearance_negro_puro_en_pantallas_oled_gasta)
+        VisualPreference.CUSTOM -> ""
+    }
+}
+
+internal fun InterfaceDensity.label(): String {
+    return when (this) {
+        InterfaceDensity.COMPACT -> Textos.get(R.string.appearance_compacta)
+        InterfaceDensity.BALANCED -> Textos.get(R.string.appearance_equilibrada)
+        InterfaceDensity.COMFORTABLE -> Textos.get(R.string.appearance_comoda)
+    }
+}
+
+internal fun TypographyStyle.label(): String {
+    return when (this) {
+        TypographyStyle.SYSTEM -> Textos.get(R.string.appearance_sistema)
+        TypographyStyle.SANS -> "Sans"
+        TypographyStyle.INTER -> "Inter"
+        TypographyStyle.MANROPE -> "Manrope"
+        TypographyStyle.DM_SANS -> "DM Sans"
+        TypographyStyle.OUTFIT -> "Outfit"
+        TypographyStyle.SPACE_GROTESK -> "Space Grotesk"
+        TypographyStyle.NUNITO -> "Nunito"
+        TypographyStyle.LORA -> "Lora"
+        TypographyStyle.JETBRAINS_MONO -> "JetBrains Mono"
+        TypographyStyle.ESTRECHA -> Textos.get(R.string.appearance_estrecha)
+    }
+}
+
+internal fun TypographyStyle.explicacion(): String {
+    return when (this) {
+        TypographyStyle.SYSTEM -> Textos.get(R.string.appearance_la_que_traiga_tu_telefono_como)
+        TypographyStyle.SANS -> Textos.get(R.string.appearance_la_sans_serif_del_sistema_es)
+        TypographyStyle.INTER -> Textos.get(R.string.appearance_font_inter)
+        TypographyStyle.MANROPE -> Textos.get(R.string.appearance_font_manrope)
+        TypographyStyle.DM_SANS -> Textos.get(R.string.appearance_font_dm_sans)
+        TypographyStyle.OUTFIT -> Textos.get(R.string.appearance_font_outfit)
+        TypographyStyle.SPACE_GROTESK -> Textos.get(R.string.appearance_font_space_grotesk)
+        TypographyStyle.NUNITO -> Textos.get(R.string.appearance_font_nunito)
+        TypographyStyle.LORA -> Textos.get(R.string.appearance_font_lora)
+        TypographyStyle.JETBRAINS_MONO -> Textos.get(R.string.appearance_font_jetbrains_mono)
+        TypographyStyle.ESTRECHA -> Textos.get(R.string.appearance_condensada_cabe_mas_nombre_de_materia)
+    }
+}
+
+internal fun HomeSection.label(): String {
+    return when (this) {
+        HomeSection.HERO -> Textos.get(R.string.appearance_lo_siguiente)
+        HomeSection.AGENDA -> Textos.get(R.string.notif_time_today)
+        HomeSection.SNAPSHOT -> Textos.get(R.string.appearance_cifras)
+        HomeSection.SUBJECTS -> Textos.get(R.string.home_block_subjects)
+        HomeSection.WEEK -> Textos.get(R.string.home_block_week)
+        HomeSection.ATTENDANCE -> Textos.get(R.string.home_block_attendance)
+        HomeSection.EXPENSES -> Textos.get(R.string.home_block_expenses)
+        HomeSection.NOTES -> Textos.get(R.string.home_block_notes)
+    }
+}
+
+internal fun HomeSection.detail(): String {
+    return when (this) {
+        HomeSection.HERO -> Textos.get(R.string.appearance_la_tarjeta_con_lo_mas_urgente)
+        HomeSection.AGENDA -> Textos.get(R.string.appearance_clases_y_entregas_del_dia)
+        HomeSection.SNAPSHOT -> Textos.get(R.string.appearance_promedio_pendientes_y_gasto)
+        HomeSection.SUBJECTS -> Textos.get(R.string.settings_home_block_subjects_desc)
+        HomeSection.WEEK -> Textos.get(R.string.settings_home_block_week_desc)
+        HomeSection.ATTENDANCE -> Textos.get(R.string.settings_home_block_attendance_desc)
+        HomeSection.EXPENSES -> Textos.get(R.string.settings_home_block_expenses_desc)
+        HomeSection.NOTES -> Textos.get(R.string.settings_home_block_notes_desc)
+    }
+}
+
+internal fun BottomBarStyle.label(): String {
+    return when (this) {
+        BottomBarStyle.LABELED -> Textos.get(R.string.appearance_con_texto)
+        BottomBarStyle.ICONS_ONLY -> Textos.get(R.string.appearance_solo_iconos)
+    }
+}
+
+
+
+internal fun CornerStyle.label(): String {
+    return when (this) {
+        CornerStyle.COMPACT -> Textos.get(R.string.appearance_rectas_2)
+        CornerStyle.BALANCED -> Textos.get(R.string.appearance_medias)
+        CornerStyle.SOFT -> Textos.get(R.string.appearance_suaves)
+    }
+}

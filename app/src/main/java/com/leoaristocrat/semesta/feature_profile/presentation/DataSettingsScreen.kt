@@ -1,0 +1,142 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.leoaristocrat.semesta.feature_profile.presentation
+
+import com.leoaristocrat.semesta.core.design.components.LargeTitleScaffold
+import com.leoaristocrat.semesta.core.design.theme.tonosDeAjustes
+import com.leoaristocrat.semesta.core.design.components.SettingsGroup
+import com.leoaristocrat.semesta.core.design.components.SettingsRow
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.RestartAlt
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.leoaristocrat.semesta.R
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.leoaristocrat.semesta.core.design.theme.LocalInterfaceSpacing
+import com.leoaristocrat.semesta.core.design.theme.LocalSectionColors
+import com.leoaristocrat.semesta.core.design.theme.scrollBottomRoom
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+
+/**
+ * Datos y respaldos: dónde está tu copia y qué se puede sacar de aquí.
+ *
+ * Lo irreversible va abajo, agrupado bajo su propio rótulo rojo. Antes «Reiniciar onboarding»
+ * iba en una tarjeta más, entre exportaciones y con el mismo peso visual que guardar un CSV,
+ * y las cosas que no se pueden deshacer no deberían parecerse a las que sí.
+ */
+@Composable
+fun DataSettingsScreen(
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: ProfileViewModel = hiltViewModel()
+) {
+    val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
+    val cloudBackupState by viewModel.cloudBackupState.collectAsStateWithLifecycle()
+    val actionState by viewModel.actionState.collectAsStateWithLifecycle()
+    val spacing = LocalInterfaceSpacing.current
+
+    var feedback by rememberSaveable { mutableStateOf<String?>(null) }
+    var feedbackEsError by rememberSaveable { mutableStateOf(false) }
+    var showRestartDialog by rememberSaveable { mutableStateOf(false) }
+
+    LargeTitleScaffold(
+        title = stringResource(R.string.settings_data_title),
+        subtitle = stringResource(R.string.settings_data_subtitle),
+        onBackClick = onBackClick,
+        modifier = modifier,
+        horizontalPadding = spacing.screenHorizontal,
+        topPadding = 8.dp,
+        bottomPadding = scrollBottomRoom,
+        itemSpacing = 10.dp
+    ) {
+        item {
+            Text(stringResource(R.string.semesta_backup_migration), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
+        }
+        item {
+            BackupSection(
+                viewModel = viewModel,
+                cloudLinked = currentUser.isLinked,
+                cloudAvailable = viewModel.cloudAvailable,
+                cloudBusy = cloudBackupState.inProgress,
+                cloudStatus = cloudBackupState.message ?: cloudBackupState.errorMessage,
+                dataSummary = viewModel.localDataSummary(),
+                onFeedback = { mensaje, esError -> feedback = mensaje; feedbackEsError = esError }
+            )
+        }
+        item {
+            SettingsGroup(label = stringResource(R.string.settings_data_reset_section), rowCount = 1) {
+                SettingsRow(
+                    icon = Icons.Rounded.RestartAlt,
+                    title = stringResource(R.string.settings_data_repeat_setup_title),
+                    subtitle = stringResource(R.string.settings_data_repeat_setup_subtitle),
+                    iconColor = tonosDeAjustes.azul,
+                    onClick = { showRestartDialog = true }
+                )
+            }
+        }
+        feedback?.let { message ->
+            item {
+                Text(
+                    message,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    color = if (feedbackEsError) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        LocalSectionColors.current.onTrack
+                    },
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        actionState.errorMessage?.let { message ->
+            item {
+                Text(
+                    message,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    if (showRestartDialog) {
+        AlertDialog(
+            onDismissRequest = { showRestartDialog = false },
+            title = { Text(stringResource(R.string.settings_data_repeat_setup_dialog_title)) },
+            text = {
+                Text(stringResource(R.string.settings_data_repeat_setup_dialog_msg))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRestartDialog = false
+                        viewModel.restartOnboarding()
+                    }
+                ) {
+                    Text(stringResource(R.string.settings_data_repeat_setup_confirm), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestartDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        )
+    }
+}

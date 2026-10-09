@@ -1,0 +1,43 @@
+package com.leoaristocrat.semesta.core.utils
+
+/**
+ * En qué peldaño de la escalera está esta compilación.
+ *
+ * Sale del nombre de versión, que ya lo dice: `0.0.0-dev.x`, `1.0.0-alpha.5`, `1.0.0-beta.1`,
+ * `1.0.0`. No hace falta un interruptor aparte que alguien tenga que acordarse de mover.
+ */
+enum class BuildStage {
+    DEV,
+    ALPHA,
+    BETA,
+    RC,
+    STABLE;
+
+    /**
+     * Si esta compilación puede abrir lo que está a medio hacer.
+     *
+     * Dev, alpha y beta. La rc y la estable no: esas dos son las que se publican.
+     * llegar a todo, incluido lo que sale apagado con su etiqueta.
+     *
+     * La beta estuvo fuera un tiempo con el argumento de que va a gente que la usa de verdad
+     * para su semestre, y que ensenarle una pantalla incompleta gasta la confianza que hace
+     * falta para que reporte lo que si importa. Hoy la beta no sale de las manos de quien hace
+     * la app, asi que lo que aportaba esa reserva era no poder probar lo propio.
+     *
+     * Si algun dia la beta vuelve a repartirse, esto es lo primero que hay que revisar.
+     */
+    val allowsUnfinished: Boolean get() = this == DEV || this == ALPHA || this == BETA
+
+    companion object {
+        fun of(versionName: String): BuildStage {
+            val suffix = versionName.substringAfter('-', "").lowercase()
+            return when {
+                suffix.startsWith("dev") -> DEV
+                suffix.startsWith("alpha") -> ALPHA
+                suffix.startsWith("beta") -> BETA
+                suffix.startsWith("rc") -> RC
+                else -> STABLE
+            }
+        }
+    }
+}

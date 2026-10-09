@@ -1,0 +1,436 @@
+package com.leoaristocrat.semesta.core.datastore
+
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import com.leoaristocrat.semesta.feature_user.domain.AppModule
+import com.leoaristocrat.semesta.feature_user.domain.AppUser
+import com.leoaristocrat.semesta.feature_user.domain.AppearancePreferences
+import com.leoaristocrat.semesta.feature_user.domain.AccessibilityPreferences
+import com.leoaristocrat.semesta.feature_user.domain.GradingCutScheme
+import com.leoaristocrat.semesta.feature_user.domain.AuthProvider
+import com.leoaristocrat.semesta.feature_expenses.domain.ExpenseCategory
+import com.leoaristocrat.semesta.feature_user.domain.LinkedAccount
+import com.leoaristocrat.semesta.feature_user.domain.SavedGradeScenario
+import com.leoaristocrat.semesta.feature_user.domain.StudyArea
+import com.leoaristocrat.semesta.feature_user.domain.SyncStatus
+import com.leoaristocrat.semesta.feature_notes.domain.NoteFormat
+import com.leoaristocrat.semesta.feature_notes.domain.NotesLayout
+import com.leoaristocrat.semesta.feature_notes.domain.NotesSort
+import com.leoaristocrat.semesta.feature_user.domain.ExpenseChartStyle
+import com.leoaristocrat.semesta.feature_user.domain.UserProfile
+import com.leoaristocrat.semesta.feature_user.domain.UserIds
+import com.leoaristocrat.semesta.feature_user.domain.VisualPreference
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import org.json.JSONArray
+import org.json.JSONObject
+import com.leoaristocrat.semesta.feature_user.domain.toGradingScaleOrNull
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
+
+class UserPreferencesDataSource(private val context: Context) {
+    private object Keys {
+        val USER_ID = stringPreferencesKey("user_id")
+        val PREFERRED_NAME = stringPreferencesKey("preferred_name")
+        val ACCOUNT_PROVIDER = stringPreferencesKey("account_provider")
+        val ACCOUNT_PROVIDER_USER_ID = stringPreferencesKey("account_provider_user_id")
+        val ACCOUNT_EMAIL = stringPreferencesKey("account_email")
+        val ACCOUNT_PHOTO_URL = stringPreferencesKey("account_photo_url")
+        val LOCAL_PHOTO_URI = stringPreferencesKey("local_photo_uri")
+        val SYNC_STATUS = stringPreferencesKey("sync_status")
+        val LAST_SYNC_AT = longPreferencesKey("last_sync_at")
+        val STUDY_AREA = stringPreferencesKey("study_area")
+        val CUSTOM_STUDY_AREA = stringPreferencesKey("custom_study_area")
+        val CAREER_OR_PROGRAM = stringPreferencesKey("career_or_program")
+        val INSTITUTION_NAME = stringPreferencesKey("institution_name")
+        val CURRENT_SEMESTER = intPreferencesKey("current_semester")
+        val TOTAL_SEMESTERS = intPreferencesKey("total_semesters")
+        val GRADING_SCALE = stringPreferencesKey("grading_scale")
+        val CUSTOM_GRADE_MAX = doublePreferencesKey("custom_grade_max")
+        val PASSING_GRADE = doublePreferencesKey("passing_grade")
+        val MINIMUM_ATTENDANCE = intPreferencesKey("minimum_attendance_percent")
+        val FEE_REMINDERS = booleanPreferencesKey("fee_reminders_enabled")
+        val FEE_PLANS = stringPreferencesKey("student_fee_plans_json")
+        val ABSENCE_LIMIT = intPreferencesKey("absence_limit")
+        val TARGET_AVERAGE = doublePreferencesKey("target_average")
+        val ENABLED_MODULES = stringSetPreferencesKey("enabled_modules")
+        val NOTES_LAYOUT = stringPreferencesKey("notes_layout")
+        val NOTES_SORT = stringPreferencesKey("notes_sort")
+        val NOTE_FORMAT_DEFAULT = stringPreferencesKey("note_format_default")
+        val VISUAL_PREFERENCE = stringPreferencesKey("visual_preference")
+        val APPEARANCE_PREFERENCES_JSON = stringPreferencesKey("appearance_preferences_json")
+        val ACCESSIBILITY_PREFERENCES_JSON = stringPreferencesKey("accessibility_preferences_json")
+        val TASK_REMINDERS_ENABLED = booleanPreferencesKey("task_reminders_enabled")
+        val ACADEMIC_WORK_REMINDERS_ENABLED = booleanPreferencesKey("academic_work_reminders_enabled")
+        val OVERDUE_REMINDERS_ENABLED = booleanPreferencesKey("overdue_reminders_enabled")
+        val GRADE_INSIGHT_REMINDERS_ENABLED = booleanPreferencesKey("grade_insight_reminders_enabled")
+        val PENDING_GRADE_REMINDERS_ENABLED = booleanPreferencesKey("pending_grade_reminders_enabled")
+        val REMINDER_LEAD_HOURS = intPreferencesKey("reminder_lead_hours")
+        val DAILY_DIGEST_ENABLED = booleanPreferencesKey("daily_digest_enabled")
+        val DAILY_DIGEST_HOUR = intPreferencesKey("daily_digest_hour")
+        val DAILY_DIGEST_MINUTE = intPreferencesKey("daily_digest_minute")
+        val TERM_END_REMINDER_ENABLED = booleanPreferencesKey("term_end_reminder_enabled")
+        val NEXT_TERM_REMINDER_ENABLED = booleanPreferencesKey("next_term_reminder_enabled")
+        val NEXT_TERM_REMINDER_OFFSET = intPreferencesKey("next_term_reminder_offset")
+        val QUIET_HOURS_ENABLED = booleanPreferencesKey("quiet_hours_enabled")
+        val QUIET_HOURS_START = intPreferencesKey("quiet_hours_start")
+        val QUIET_HOURS_END = intPreferencesKey("quiet_hours_end")
+        val EXPENSE_CHART_STYLE = stringPreferencesKey("expense_chart_style")
+        val WEEKLY_BUDGET = intPreferencesKey("weekly_budget")
+        val MONTHLY_BUDGET = intPreferencesKey("monthly_budget")
+        val EXPENSE_ALERT_THRESHOLD_PERCENT = intPreferencesKey("expense_alert_threshold_percent")
+        val ENABLED_EXPENSE_CATEGORIES = stringSetPreferencesKey("enabled_expense_categories")
+        val GRADE_SCENARIOS_JSON = stringPreferencesKey("grade_scenarios_json")
+        val GRADING_CUT_SCHEME_JSON = stringPreferencesKey("academic_period_scheme_json")
+        val SETUP_COMPLETED = booleanPreferencesKey("setup_completed")
+        val CREATED_AT = longPreferencesKey("created_at")
+        val UPDATED_AT = longPreferencesKey("updated_at")
+    }
+
+    val userProfileFlow: Flow<UserProfile?> = context.dataStore.data.map { prefs ->
+        val userId = UserIds.normalize(prefs[Keys.USER_ID] ?: return@map null)
+        /*
+         * La escala hace de centinela: sin ella no hay perfil que devolver.
+         *
+         * Antes ese papel lo compartia el nivel de estudios, que ya no existe —la app es de
+         * educacion superior y preguntarlo era ofrecer una sola respuesta—. La escala sirve
+         * igual: se elige en el mismo paso y sin ella no se puede calcular nada.
+         */
+        val gradingScaleStr = prefs[Keys.GRADING_SCALE] ?: return@map null
+        val gradingScale = gradingScaleStr.toGradingScaleOrNull()
+            ?: return@map null
+        val studyArea = prefs[Keys.STUDY_AREA]?.let {
+            runCatching { StudyArea.valueOf(it) }.getOrNull()
+        }
+        val enabledModules = prefs[Keys.ENABLED_MODULES]
+            ?.mapNotNull { runCatching { AppModule.valueOf(it) }.getOrNull() }
+            ?.toSet()
+            ?: setOf(AppModule.GRADES, AppModule.TASKS)
+        val notesLayout = prefs[Keys.NOTES_LAYOUT]
+            ?.let { runCatching { NotesLayout.valueOf(it) }.getOrNull() }
+            ?: NotesLayout.CUADERNO
+        val notesSort = prefs[Keys.NOTES_SORT]
+            ?.let { runCatching { NotesSort.valueOf(it) }.getOrNull() }
+            ?: NotesSort.MODIFICADA
+        val noteFormatDefault = prefs[Keys.NOTE_FORMAT_DEFAULT]
+            ?.let { runCatching { NoteFormat.valueOf(it) }.getOrNull() }
+            ?: NoteFormat.PLAIN
+        val visualPreference = prefs[Keys.VISUAL_PREFERENCE]
+            ?.let { runCatching { VisualPreference.valueOf(it) }.getOrNull() }
+            ?: VisualPreference.SYSTEM
+        val accountProvider = prefs[Keys.ACCOUNT_PROVIDER]
+            ?.let { runCatching { AuthProvider.valueOf(it) }.getOrNull() }
+            ?: AuthProvider.LOCAL
+        val syncStatus = prefs[Keys.SYNC_STATUS]
+            ?.let { runCatching { SyncStatus.valueOf(it) }.getOrNull() }
+            ?: SyncStatus.LOCAL_ONLY
+
+        UserProfile(
+            userId = userId,
+            preferredName = prefs[Keys.PREFERRED_NAME] ?: "",
+            accountProvider = accountProvider,
+            accountProviderUserId = prefs[Keys.ACCOUNT_PROVIDER_USER_ID],
+            accountEmail = prefs[Keys.ACCOUNT_EMAIL],
+            accountPhotoUrl = prefs[Keys.ACCOUNT_PHOTO_URL],
+            localPhotoUri = prefs[Keys.LOCAL_PHOTO_URI],
+            syncStatus = syncStatus,
+            lastSyncAt = prefs[Keys.LAST_SYNC_AT],
+            studyArea = studyArea,
+            customStudyArea = prefs[Keys.CUSTOM_STUDY_AREA],
+            careerOrProgram = prefs[Keys.CAREER_OR_PROGRAM],
+            institutionName = prefs[Keys.INSTITUTION_NAME],
+            currentSemester = prefs[Keys.CURRENT_SEMESTER]?.takeIf { it > 0 },
+            totalSemesters = prefs[Keys.TOTAL_SEMESTERS]?.takeIf { it > 0 },
+            gradingScale = gradingScale,
+            customGradeMax = prefs[Keys.CUSTOM_GRADE_MAX]?.coerceIn(1.0, 100.0) ?: 100.0,
+            passingGrade = prefs[Keys.PASSING_GRADE] ?: 3.0,
+            absenceLimit = prefs[Keys.ABSENCE_LIMIT]?.takeIf { it > 0 },
+            targetAverage = prefs[Keys.TARGET_AVERAGE] ?: 4.0,
+            enabledModules = enabledModules,
+            notesLayout = notesLayout,
+            notesSort = notesSort,
+            noteFormatDefault = noteFormatDefault,
+            visualPreference = visualPreference,
+            appearancePreferences = parseAppearancePreferences(prefs[Keys.APPEARANCE_PREFERENCES_JSON]),
+            accessibilityPreferences = parseAccessibilityPreferences(prefs[Keys.ACCESSIBILITY_PREFERENCES_JSON]),
+            taskRemindersEnabled = prefs[Keys.TASK_REMINDERS_ENABLED] ?: true,
+            academicWorkRemindersEnabled = prefs[Keys.ACADEMIC_WORK_REMINDERS_ENABLED] ?: true,
+            overdueRemindersEnabled = prefs[Keys.OVERDUE_REMINDERS_ENABLED] ?: true,
+            gradeInsightRemindersEnabled = prefs[Keys.GRADE_INSIGHT_REMINDERS_ENABLED] ?: true,
+            pendingGradeRemindersEnabled = prefs[Keys.PENDING_GRADE_REMINDERS_ENABLED] ?: true,
+            reminderLeadHours = prefs[Keys.REMINDER_LEAD_HOURS] ?: 24,
+            /*
+             * Sin valor guardado se hereda el comportamiento viejo, no un «si» a secas.
+             *
+             * Antes el resumen salia cuando estaba encendido cualquiera de los cinco avisos, y
+             * no tenia interruptor propio. Poner true por defecto le encenderia el resumen a
+             * quien los habia apagado todos justamente para no recibir nada.
+             */
+            dailyDigestEnabled = prefs[Keys.DAILY_DIGEST_ENABLED] ?: (
+                (prefs[Keys.TASK_REMINDERS_ENABLED] ?: true) ||
+                    (prefs[Keys.ACADEMIC_WORK_REMINDERS_ENABLED] ?: true) ||
+                    (prefs[Keys.OVERDUE_REMINDERS_ENABLED] ?: true) ||
+                    (prefs[Keys.GRADE_INSIGHT_REMINDERS_ENABLED] ?: true) ||
+                    (prefs[Keys.PENDING_GRADE_REMINDERS_ENABLED] ?: true)
+                ),
+            dailyDigestHour = prefs[Keys.DAILY_DIGEST_HOUR]?.takeIf { it in 0..23 } ?: 7,
+            dailyDigestMinute = prefs[Keys.DAILY_DIGEST_MINUTE]?.takeIf { it in 0..59 } ?: 30,
+            termEndReminderEnabled = prefs[Keys.TERM_END_REMINDER_ENABLED] ?: true,
+            nextTermReminderEnabled = prefs[Keys.NEXT_TERM_REMINDER_ENABLED] ?: true,
+            nextTermReminderOffset = prefs[Keys.NEXT_TERM_REMINDER_OFFSET]?.takeIf { it in 0..2 } ?: 0,
+            quietHoursEnabled = prefs[Keys.QUIET_HOURS_ENABLED] ?: false,
+            quietHoursStartHour = prefs[Keys.QUIET_HOURS_START]?.takeIf { it in 0..23 },
+            quietHoursEndHour = prefs[Keys.QUIET_HOURS_END]?.takeIf { it in 0..23 },
+            expenseChartStyle = prefs[Keys.EXPENSE_CHART_STYLE]
+                ?.let { valor -> ExpenseChartStyle.entries.firstOrNull { it.name == valor } }
+                ?: ExpenseChartStyle.BARS,
+            weeklyBudget = prefs[Keys.WEEKLY_BUDGET] ?: 0,
+            monthlyBudget = prefs[Keys.MONTHLY_BUDGET] ?: 0,
+            expenseAlertThresholdPercent = prefs[Keys.EXPENSE_ALERT_THRESHOLD_PERCENT] ?: 80,
+            enabledExpenseCategories = prefs[Keys.ENABLED_EXPENSE_CATEGORIES]
+                ?.mapNotNull { runCatching { ExpenseCategory.valueOf(it) }.getOrNull() }
+                ?.toSet()
+                ?.ifEmpty { ExpenseCategory.entries.toSet() }
+                ?: ExpenseCategory.entries.toSet(),
+            minimumAttendancePercent = (prefs[Keys.MINIMUM_ATTENDANCE] ?: 75).coerceIn(1, 100),
+            feeRemindersEnabled = prefs[Keys.FEE_REMINDERS] ?: true,
+            feePlans = StudentFeesJson.decode(prefs[Keys.FEE_PLANS]),
+            gradeScenarios = parseGradeScenarios(prefs[Keys.GRADE_SCENARIOS_JSON]),
+            gradingCutScheme = parseGradingCutScheme(prefs[Keys.GRADING_CUT_SCHEME_JSON]),
+            // `createdAt` solo lo escribe terminar el onboarding, asi que un perfil con fecha
+            // ya paso por el. Cubre a quien «Repetir configuracion» le dejo `false` en disco
+            // cuando todavia lo escribia ahi: hoy repetir el recorrido no toca el archivo.
+            setupCompleted = (prefs[Keys.SETUP_COMPLETED] ?: false) || (prefs[Keys.CREATED_AT] ?: 0L) > 0L,
+            createdAt = prefs[Keys.CREATED_AT] ?: 0L,
+            updatedAt = prefs[Keys.UPDATED_AT] ?: 0L
+        )
+    }
+
+    val currentUserFlow: Flow<AppUser> = userProfileFlow.map { profile ->
+        if (profile != null) {
+            AppUser(
+                userId = UserIds.normalize(profile.userId),
+                displayName = profile.preferredName.takeIf { it.isNotBlank() },
+                email = profile.accountEmail,
+                photoUrl = profile.accountPhotoUrl,
+                authProvider = profile.accountProvider,
+                providerUserId = profile.accountProviderUserId,
+                syncStatus = profile.syncStatus
+            )
+        } else {
+            AppUser(
+                userId = UserIds.LOCAL,
+                displayName = null,
+                email = null,
+                photoUrl = null
+            )
+        }
+    }
+
+    suspend fun saveUserProfile(profile: UserProfile) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.USER_ID] = UserIds.normalize(profile.userId)
+            prefs[Keys.PREFERRED_NAME] = profile.preferredName
+            prefs[Keys.GRADING_SCALE] = profile.gradingScale.name
+            prefs[Keys.CUSTOM_GRADE_MAX] = profile.customGradeMax.coerceIn(1.0, 100.0)
+            prefs[Keys.PASSING_GRADE] = profile.passingGrade
+            // Quitar el tope es un valor, no un olvido: hay que borrar la clave.
+            profile.absenceLimit?.let { prefs[Keys.ABSENCE_LIMIT] = it }
+                ?: prefs.remove(Keys.ABSENCE_LIMIT)
+            prefs[Keys.TARGET_AVERAGE] = profile.targetAverage
+            prefs[Keys.SETUP_COMPLETED] = profile.setupCompleted
+            prefs[Keys.CREATED_AT] = profile.createdAt
+            prefs[Keys.UPDATED_AT] = profile.updatedAt
+            prefs[Keys.ENABLED_MODULES] = profile.enabledModules.map { it.name }.toSet()
+            prefs[Keys.NOTES_LAYOUT] = profile.notesLayout.name
+            prefs[Keys.NOTES_SORT] = profile.notesSort.name
+            prefs[Keys.NOTE_FORMAT_DEFAULT] = profile.noteFormatDefault.name
+            prefs[Keys.VISUAL_PREFERENCE] = profile.visualPreference.name
+            prefs[Keys.APPEARANCE_PREFERENCES_JSON] = profile.appearancePreferences.normalized().toJsonString()
+            prefs[Keys.ACCESSIBILITY_PREFERENCES_JSON] = profile.accessibilityPreferences.toJsonString()
+            prefs[Keys.TASK_REMINDERS_ENABLED] = profile.taskRemindersEnabled
+            prefs[Keys.ACADEMIC_WORK_REMINDERS_ENABLED] = profile.academicWorkRemindersEnabled
+            prefs[Keys.OVERDUE_REMINDERS_ENABLED] = profile.overdueRemindersEnabled
+            prefs[Keys.GRADE_INSIGHT_REMINDERS_ENABLED] = profile.gradeInsightRemindersEnabled
+            prefs[Keys.PENDING_GRADE_REMINDERS_ENABLED] = profile.pendingGradeRemindersEnabled
+            prefs[Keys.REMINDER_LEAD_HOURS] = profile.reminderLeadHours
+            prefs[Keys.DAILY_DIGEST_ENABLED] = profile.dailyDigestEnabled
+            prefs[Keys.DAILY_DIGEST_HOUR] = profile.dailyDigestHour
+            prefs[Keys.DAILY_DIGEST_MINUTE] = profile.dailyDigestMinute
+            prefs[Keys.TERM_END_REMINDER_ENABLED] = profile.termEndReminderEnabled
+            prefs[Keys.NEXT_TERM_REMINDER_ENABLED] = profile.nextTermReminderEnabled
+            prefs[Keys.NEXT_TERM_REMINDER_OFFSET] = profile.nextTermReminderOffset
+            prefs[Keys.QUIET_HOURS_ENABLED] = profile.quietHoursEnabled
+            if (profile.quietHoursStartHour != null) {
+                prefs[Keys.QUIET_HOURS_START] = profile.quietHoursStartHour
+            } else {
+                prefs.remove(Keys.QUIET_HOURS_START)
+            }
+            if (profile.quietHoursEndHour != null) {
+                prefs[Keys.QUIET_HOURS_END] = profile.quietHoursEndHour
+            } else {
+                prefs.remove(Keys.QUIET_HOURS_END)
+            }
+            prefs[Keys.EXPENSE_CHART_STYLE] = profile.expenseChartStyle.name
+            prefs[Keys.WEEKLY_BUDGET] = profile.weeklyBudget
+            prefs[Keys.MONTHLY_BUDGET] = profile.monthlyBudget
+            prefs[Keys.EXPENSE_ALERT_THRESHOLD_PERCENT] = profile.expenseAlertThresholdPercent
+            prefs[Keys.ENABLED_EXPENSE_CATEGORIES] = profile.enabledExpenseCategories.map { it.name }.toSet()
+            prefs[Keys.MINIMUM_ATTENDANCE] = profile.minimumAttendancePercent
+            prefs[Keys.FEE_REMINDERS] = profile.feeRemindersEnabled
+            prefs[Keys.FEE_PLANS] = StudentFeesJson.encode(profile.feePlans).toString()
+            prefs[Keys.GRADE_SCENARIOS_JSON] = profile.gradeScenarios.toJsonArrayString()
+            prefs[Keys.GRADING_CUT_SCHEME_JSON] = profile.gradingCutScheme.toJsonString()
+            prefs[Keys.ACCOUNT_PROVIDER] = profile.accountProvider.name
+            prefs[Keys.SYNC_STATUS] = profile.syncStatus.name
+
+            if (profile.lastSyncAt != null) {
+                prefs[Keys.LAST_SYNC_AT] = profile.lastSyncAt
+            } else {
+                prefs.remove(Keys.LAST_SYNC_AT)
+            }
+            if (profile.accountProviderUserId != null) {
+                prefs[Keys.ACCOUNT_PROVIDER_USER_ID] = profile.accountProviderUserId
+            } else {
+                prefs.remove(Keys.ACCOUNT_PROVIDER_USER_ID)
+            }
+            if (profile.accountEmail != null) {
+                prefs[Keys.ACCOUNT_EMAIL] = profile.accountEmail
+            } else {
+                prefs.remove(Keys.ACCOUNT_EMAIL)
+            }
+            if (profile.accountPhotoUrl != null) {
+                prefs[Keys.ACCOUNT_PHOTO_URL] = profile.accountPhotoUrl
+            } else {
+                prefs.remove(Keys.ACCOUNT_PHOTO_URL)
+            }
+            if (profile.localPhotoUri != null) {
+                prefs[Keys.LOCAL_PHOTO_URI] = profile.localPhotoUri
+            } else {
+                prefs.remove(Keys.LOCAL_PHOTO_URI)
+            }
+
+            if (profile.studyArea != null) {
+                prefs[Keys.STUDY_AREA] = profile.studyArea.name
+            } else {
+                prefs.remove(Keys.STUDY_AREA)
+            }
+            if (profile.customStudyArea != null) {
+                prefs[Keys.CUSTOM_STUDY_AREA] = profile.customStudyArea
+            } else {
+                prefs.remove(Keys.CUSTOM_STUDY_AREA)
+            }
+            if (profile.careerOrProgram != null) {
+                prefs[Keys.CAREER_OR_PROGRAM] = profile.careerOrProgram
+            } else {
+                prefs.remove(Keys.CAREER_OR_PROGRAM)
+            }
+            if (profile.institutionName != null) {
+                prefs[Keys.INSTITUTION_NAME] = profile.institutionName
+            } else {
+                prefs.remove(Keys.INSTITUTION_NAME)
+            }
+            if (profile.currentSemester != null) {
+                prefs[Keys.CURRENT_SEMESTER] = profile.currentSemester
+            } else {
+                prefs.remove(Keys.CURRENT_SEMESTER)
+            }
+            if (profile.totalSemesters != null) {
+                prefs[Keys.TOTAL_SEMESTERS] = profile.totalSemesters
+            } else {
+                prefs.remove(Keys.TOTAL_SEMESTERS)
+            }
+        }
+    }
+
+    private fun AppearancePreferences.toJsonString(): String =
+        AppearancePreferencesJson.encode(this).toString()
+
+    private fun AccessibilityPreferences.toJsonString(): String =
+        AccessibilityPreferencesJson.encode(this).toString()
+
+    private fun parseAccessibilityPreferences(raw: String?): AccessibilityPreferences {
+        if (raw.isNullOrBlank()) return AccessibilityPreferences()
+        return runCatching {
+            AccessibilityPreferencesJson.decode(JSONObject(raw), AccessibilityPreferences())
+        }.getOrDefault(AccessibilityPreferences())
+    }
+
+    private fun parseAppearancePreferences(raw: String?): AppearancePreferences {
+        if (raw.isNullOrBlank()) return AppearancePreferences.defaults()
+        return runCatching {
+            AppearancePreferencesJson.decode(JSONObject(raw), AppearancePreferences.defaults())
+        }.getOrDefault(AppearancePreferences.defaults())
+    }
+
+    suspend fun updatePreferredName(name: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PREFERRED_NAME] = name
+            prefs[Keys.UPDATED_AT] = System.currentTimeMillis()
+        }
+    }
+
+    suspend fun markSetupCompleted() {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SETUP_COMPLETED] = true
+            prefs[Keys.UPDATED_AT] = System.currentTimeMillis()
+        }
+    }
+
+    suspend fun linkAccount(account: LinkedAccount) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.ACCOUNT_PROVIDER] = account.provider.name
+            prefs[Keys.ACCOUNT_PROVIDER_USER_ID] = account.providerUserId
+            prefs[Keys.SYNC_STATUS] = SyncStatus.READY_FOR_BACKUP.name
+            prefs[Keys.UPDATED_AT] = System.currentTimeMillis()
+
+            if (!account.displayName.isNullOrBlank()) {
+                prefs[Keys.PREFERRED_NAME] = account.displayName
+            }
+            if (!account.email.isNullOrBlank()) {
+                prefs[Keys.ACCOUNT_EMAIL] = account.email
+            } else {
+                prefs.remove(Keys.ACCOUNT_EMAIL)
+            }
+            if (!account.photoUrl.isNullOrBlank()) {
+                prefs[Keys.ACCOUNT_PHOTO_URL] = account.photoUrl
+            } else {
+                prefs.remove(Keys.ACCOUNT_PHOTO_URL)
+            }
+        }
+    }
+
+    suspend fun unlinkAccount() {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.ACCOUNT_PROVIDER] = AuthProvider.LOCAL.name
+            prefs[Keys.SYNC_STATUS] = SyncStatus.LOCAL_ONLY.name
+            prefs[Keys.UPDATED_AT] = System.currentTimeMillis()
+            prefs.remove(Keys.ACCOUNT_PROVIDER_USER_ID)
+            prefs.remove(Keys.ACCOUNT_EMAIL)
+            prefs.remove(Keys.ACCOUNT_PHOTO_URL)
+            prefs.remove(Keys.LAST_SYNC_AT)
+        }
+    }
+
+    private fun parseGradeScenarios(json: String?): List<SavedGradeScenario> {
+        if (json.isNullOrBlank()) return emptyList()
+        return runCatching { GradeScenariosJson.decode(JSONArray(json)) }.getOrDefault(emptyList())
+    }
+
+    private fun List<SavedGradeScenario>.toJsonArrayString(): String =
+        GradeScenariosJson.encode(this).toString()
+
+    private fun parseGradingCutScheme(json: String?): GradingCutScheme =
+        GradingCutSchemeJson.decode(json) ?: GradingCutScheme.default()
+
+    private fun GradingCutScheme.toJsonString(): String = GradingCutSchemeJson.encode(this)
+}

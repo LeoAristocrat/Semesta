@@ -1,0 +1,70 @@
+package com.leoaristocrat.semesta.feature_schedule.presentation
+
+import androidx.compose.ui.graphics.Color
+import com.leoaristocrat.semesta.feature_schedule.domain.ClassAttendanceStatus
+import com.leoaristocrat.semesta.core.utils.Textos
+import com.leoaristocrat.semesta.R
+
+/**
+ * Los colores de la asistencia, que no siguen al tema.
+ *
+ * El resto de la app toma su color del acento que cada uno elige, y eso está bien para lo que
+ * es decoración. Aquí no: estos tres **significan algo concreto** —fuiste, no fuiste, no la
+ * hubo— y el verde y el rojo son lo que los hace legibles de un vistazo sin leer nada.
+ *
+ * Seguían al tema, así que con el acento lila puesto una asistencia se pintaba lila y la tira
+ * del historial dejaba de contar lo que tenía que contar: se veía un patrón de colores bonito
+ * en lugar de faltas y asistencias.
+ *
+ * Están fijos también entre claro y oscuro a propósito. Son la misma información en los dos, y
+ * un verde que cambia de tono según el fondo obligaría a reaprenderlo.
+ *
+ * design-tokens-ok-begin: la asistencia marca hechos y no puede seguir al acento del usuario
+ */
+internal val AttendanceAttended = Color(0xFF58D68D)
+internal val AttendanceAbsent = Color(0xFFF1706F)
+internal val AttendanceCancelled = Color(0xFFF0B429)
+internal val AttendanceRescheduled = Color(0xFF8AA6F2)
+
+/*
+ * Los contenedores tonales del hero del historial, tal cual el diseño aprobado: el bloque
+ * profundo con el texto pálido en oscuro, y al revés en claro, que es exactamente la
+ * pareja contenedor / sobre-contenedor de M3. Estuvo como una mezcla del color con la
+ * superficie y salía un verde apagado que no era el del artifact.
+ */
+internal val VerdeProfundo = Color(0xFF0A5C23)
+internal val VerdePalido = Color(0xFFB4F2C4)
+internal val AmbarProfundo = Color(0xFF6B4E00)
+internal val AmbarPalido = Color(0xFFFFE29E)
+internal val RojoProfundo = Color(0xFF8C1F0A)
+internal val RojoPalido = Color(0xFFFFDCD5)
+// design-tokens-ok-end
+
+/** Un contenedor tonal de asistencia: el bloque y lo que se escribe encima. */
+internal data class TonoDeAsistencia(val contenedor: Color, val sobre: Color)
+
+internal fun tonoDeAsistencia(profundo: Color, palido: Color, oscuro: Boolean): TonoDeAsistencia =
+    if (oscuro) TonoDeAsistencia(profundo, palido) else TonoDeAsistencia(palido, profundo)
+
+/**
+ * El color de un estado.
+ *
+ * `PENDING` no está aquí porque no es un hecho sino su ausencia: se pinta con el gris de la
+ * superficie que le toque, y por eso lo resuelve quien lo dibuja.
+ */
+internal fun ClassAttendanceStatus.attendanceColor(): Color? = when (this) {
+    ClassAttendanceStatus.ATTENDED -> AttendanceAttended
+    ClassAttendanceStatus.ABSENT -> AttendanceAbsent
+    ClassAttendanceStatus.CANCELLED -> AttendanceCancelled
+    ClassAttendanceStatus.RESCHEDULED -> AttendanceRescheduled
+    ClassAttendanceStatus.PENDING -> null
+}
+
+/** Cómo se llama cada estado en minúsculas, para la leyenda. */
+internal fun ClassAttendanceStatus.legendName(): String = when (this) {
+    ClassAttendanceStatus.ATTENDED -> Textos.get(R.string.schedule_asisti)
+    ClassAttendanceStatus.ABSENT -> Textos.get(R.string.schedule_falta)
+    ClassAttendanceStatus.CANCELLED -> Textos.get(R.string.schedule_cancelada)
+    ClassAttendanceStatus.RESCHEDULED -> Textos.get(R.string.schedule_reprogramada)
+    ClassAttendanceStatus.PENDING -> Textos.get(R.string.schedule_sin_marcar)
+}

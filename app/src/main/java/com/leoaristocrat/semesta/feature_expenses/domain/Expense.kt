@@ -1,0 +1,21 @@
+package com.leoaristocrat.semesta.feature_expenses.domain
+
+data class Expense(
+    val id: String,
+    val category: ExpenseCategory,
+    val amount: Int,
+    val dateMillis: Long,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+enum class ExpenseCategory {
+    TRANSPORT,
+    FOOD,
+    COPIES,
+    MATERIALS,
+    OUTINGS,
+    HOSTEL,
+    COACHING,
+    OTHER
+}

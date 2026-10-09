@@ -1,0 +1,93 @@
+package com.leoaristocrat.semesta.feature_home.presentation
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.leoaristocrat.semesta.feature_expenses.domain.ExpensesRepository
+import com.leoaristocrat.semesta.feature_grades.domain.GradesRepository
+import com.leoaristocrat.semesta.feature_notes.domain.NotesRepository
+import com.leoaristocrat.semesta.feature_schedule.domain.ScheduleRepository
+import com.leoaristocrat.semesta.feature_tasks.domain.TasksRepository
+import com.leoaristocrat.semesta.feature_templates.domain.AcademicWorksRepository
+import com.leoaristocrat.semesta.feature_user.domain.UserRepository
+import com.leoaristocrat.semesta.feature_home.domain.HomeContent
+import com.leoaristocrat.semesta.feature_home.domain.HomeSummaryFactory
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
+
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val gradesRepository: GradesRepository,
+    private val tasksRepository: TasksRepository,
+    private val expensesRepository: ExpensesRepository,
+    private val academicWorksRepository: AcademicWorksRepository,
+    private val scheduleRepository: ScheduleRepository,
+    private val notesRepository: NotesRepository,
+    private val userRepository: UserRepository
+) : ViewModel() {
+    private val homeContent = combine(
+        combine(
+            gradesRepository.subjects,
+            tasksRepository.tasks,
+            expensesRepository.expenses,
+            academicWorksRepository.works,
+            scheduleRepository.sessions
+        ) { subjects, tasks, expenses, works, classSessions ->
+            HomeContent(
+                subjects = subjects,
+                tasks = tasks,
+                expenses = expenses,
+                works = works,
+                classSessions = classSessions
+            )
+        },
+        // Los dos que entraron con los bloques opcionales de Inicio: `combine` admite cinco.
+        scheduleRepository.occurrences,
+        notesRepository.notes
+    ) { content, occurrences, notes ->
+        content.copy(occurrences = occurrences, notes = notes)
+    }
+
+    /*
+     * **El hero se recalcula cada minuto mientras Inicio este a la vista.**
+     *
+     * El resumen solo se rehacia cuando cambiaban los datos, y «la clase esta en curso»
+     * no es un dato: es la hora. Sin esto, la clase de las diez se marcaba como en curso
+     * cuando alguien registrara algo, no a las diez. `WhileSubscribed` apaga el reloj
+     * con la pantalla.
+     */
+    private val minuto = flow {
+        while (true) {
+            emit(System.currentTimeMillis() / 60_000)
+            delay(60_000 - System.currentTimeMillis() % 60_000)
+        }
+    }
+
+    val uiState: StateFlow<HomeUiState> = combine(
+        homeContent,
+        userRepository.userProfile,
+        userRepository.currentUser,
+        minuto
+    ) { content, profile, user, _ ->
+        HomeUiState(
+            summary = HomeSummaryFactory.create(
+                content = content,
+                profile = profile,
+                user = user
+            )
+        )
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = HomeUiState()
+        )
+}

@@ -1,0 +1,81 @@
+package com.leoaristocrat.semesta.feature_tasks.data.local
+
+import com.leoaristocrat.semesta.feature_tasks.domain.StudentTask
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskDifficulty
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskGradingStatus
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskSubtask
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskType
+
+fun TaskWithSubtasks.toDomain(): StudentTask {
+    return task.toDomain().copy(
+        subtasks = subtasks.sortedBy { it.position }.map { it.toDomain() }
+    )
+}
+
+fun TaskSubtaskEntity.toDomain(): TaskSubtask {
+    return TaskSubtask(
+        id = id,
+        taskId = taskId,
+        title = title,
+        isCompleted = isCompleted,
+        position = position
+    )
+}
+
+fun TaskSubtask.toEntity(): TaskSubtaskEntity {
+    return TaskSubtaskEntity(
+        id = id,
+        taskId = taskId,
+        title = title,
+        isCompleted = isCompleted,
+        position = position
+    )
+}
+
+fun TaskEntity.toDomain(): StudentTask {
+    val parsedDifficulty = runCatching { TaskDifficulty.valueOf(difficulty) }
+        .getOrDefault(TaskDifficulty.MEDIUM)
+    val parsedType = runCatching { TaskType.valueOf(type) }
+        .getOrDefault(TaskType.WORKSHOP)
+
+    return StudentTask(
+        id = id,
+        title = title,
+        description = description,
+        subjectId = subjectId,
+        type = parsedType,
+        dueDateMillis = dueDateMillis,
+        difficulty = parsedDifficulty,
+        estimatedMinutes = estimatedMinutes,
+        completed = completed,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        cutId = periodId,
+        gradingStatus = runCatching { TaskGradingStatus.valueOf(gradingStatus) }
+            .getOrDefault(TaskGradingStatus.UNDECIDED),
+        linkedGradeId = linkedGradeId,
+        completedAt = completedAt,
+        subtasks = emptyList()
+    )
+}
+
+fun StudentTask.toEntity(userId: String): TaskEntity {
+    return TaskEntity(
+        id = id,
+        userId = userId,
+        title = title,
+        description = description,
+        subjectId = subjectId,
+        type = type.name,
+        dueDateMillis = dueDateMillis,
+        difficulty = difficulty.name,
+        estimatedMinutes = estimatedMinutes,
+        completed = completed,
+        periodId = cutId,
+        gradingStatus = gradingStatus.name,
+        linkedGradeId = linkedGradeId,
+        completedAt = completedAt,
+        createdAt = createdAt,
+        updatedAt = updatedAt
+    )
+}

@@ -1,0 +1,174 @@
+package com.leoaristocrat.semesta.core.navigation
+
+import android.provider.Settings
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.leoaristocrat.semesta.core.di.rememberSemestaEntryPoint
+import com.leoaristocrat.semesta.core.design.components.SemestaAnimatedLaunchScreen
+import com.leoaristocrat.semesta.core.fallos.AlmacenDeFallos
+import com.leoaristocrat.semesta.feature_setup.presentation.SetupFlow
+import com.leoaristocrat.semesta.feature_support.presentation.FlujoDeFallo
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+@Composable
+fun RootNavGraph(
+    modifier: Modifier = Modifier,
+    launchRoute: String? = null,
+    onLaunchRouteConsumed: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val animationsDisabled = remember {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        ) == 0f
+    }
+    val entryPoint = rememberSemestaEntryPoint()
+    val userRepository = remember { entryPoint.userRepository() }
+    val setupCompleted by remember {
+        userRepository.userProfile
+            .map { it?.setupCompleted }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = null)
+    val isReplayingSetup by userRepository.isReplayingSetup.collectAsStateWithLifecycle()
+    var setupLaunchRoute by remember { mutableStateOf<String?>(null) }
+    // Se lee una sola vez, al entrar: lo que pase con el archivo a partir de aquí lo decide
+    // esta misma pantalla al despacharlo.
+    var falloPendiente by remember { mutableStateOf(AlmacenDeFallos.pendiente(context)) }
+    var launchAnimationFinished by rememberSaveable { mutableStateOf(animationsDisabled) }
+    var repositoryDidLoad by remember { mutableStateOf(userRepository.didLoad) }
+
+    LaunchedEffect(Unit) {
+        while (!repositoryDidLoad) {
+            repositoryDidLoad = userRepository.didLoad
+            if (!repositoryDidLoad) {
+                delay(16)
+            }
+        }
+    }
+
+    val isLoading = setupCompleted == null && !repositoryDidLoad
+    val showLaunchScreen = !launchAnimationFinished || isLoading
+
+    // En el primer arranque la animación se ve entera: es la presentación de la marca y el
+    // usuario aún no la conoce. Cumplido ese papel pasa a estorbar, así que a partir de
+    // entonces corre más. No se le recorta ninguna fase; solo transcurre más deprisa.
+    //
+    // La decisión hay que tomarla en el primer fotograma, cuando el perfil todavía no ha
+    // cargado, y por eso se consulta la pista de arranque en vez del perfil.
+    val launchTimeScale = remember { if (LaunchHints.setupCompleted(context)) 0.6f else 1f }
+    LaunchedEffect(setupCompleted) {
+        val completed = setupCompleted ?: return@LaunchedEffect
+        LaunchHints.setSetupCompleted(context, completed)
+    }
+
+    // El inicio entra con su propio fundido desde el fondo de la app.
+    //
+    // No hay velo de color aquí a propósito: la onda del onboarding se queda dentro del
+    // onboarding. Fundir aquel color claro sobre el inicio, que es oscuro, obligaba a pasar
+    // por mezclas intermedias que no son ninguno de los dos y se leían como un segundo
+    // destello. Al no coincidir nunca en pantalla, ese problema no puede darse.
+    val mainAlpha = remember { Animatable(if (animationsDisabled) 1f else 0f) }
+    LaunchedEffect(setupCompleted, isReplayingSetup, animationsDisabled) {
+        if (setupCompleted != true || isReplayingSetup) return@LaunchedEffect
+        if (animationsDisabled) {
+            mainAlpha.snapTo(1f)
+        } else {
+            mainAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 420, easing = FastOutSlowInEasing)
+            )
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            // Sin esto asomaba el fondo blanco de la ventana en cualquier hueco en que no
+            // hubiera nada opaco encima: el tema hereda de Theme.Material.Light.
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        if (!isLoading) {
+            when {
+                /*
+                 * La puerta lenta del «se cerró sola».
+                 *
+                 * Va **antes que todo lo demás**, incluido el alta: si la app se rompió a
+                 * mitad del onboarding, ese es justo el fallo que más interesa que alguien
+                 * cuente. Es la misma pantalla que sale al vuelo cuando el fallo se puede
+                 * cazar; aquí llega cuando el proceso se fue tan de golpe que no dio tiempo
+                 * a nada y el informe se quedó esperando en disco.
+                 */
+                falloPendiente != null -> FlujoDeFallo(
+                    informe = falloPendiente!!,
+                    enElActo = false,
+                    onTerminar = { falloPendiente = null },
+                    modifier = Modifier.fillMaxSize()
+                )
+                setupCompleted == true && !isReplayingSetup -> MainNavGraph(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = mainAlpha.value },
+                    initialRoute = AppRoutes.Home,
+                    launchRoute = launchRoute ?: setupLaunchRoute,
+                    onLaunchRouteConsumed = {
+                        if (launchRoute != null) {
+                            onLaunchRouteConsumed()
+                        } else {
+                            setupLaunchRoute = null
+                        }
+                    }
+                )
+                else -> SetupFlow(
+                    modifier = Modifier.fillMaxSize(),
+                    isReplay = isReplayingSetup,
+                    onDismissReplay = if (isReplayingSetup) {
+                        { userRepository.finishReplayingSetup() }
+                    } else null,
+                    onSetupFinished = { createFirstSubject ->
+                        userRepository.finishReplayingSetup()
+                        setupLaunchRoute = if (createFirstSubject) AppRoutes.AddSubject else null
+                    }
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showLaunchScreen,
+            modifier = Modifier.fillMaxSize(),
+            enter = fadeIn(animationSpec = tween(durationMillis = 0)),
+            exit = fadeOut(
+                animationSpec = tween(durationMillis = 360, easing = FastOutSlowInEasing)
+            ),
+            label = "launchFade"
+        ) {
+            SemestaAnimatedLaunchScreen(
+                modifier = Modifier.fillMaxSize(),
+                timeScale = launchTimeScale,
+                onAnimationFinished = { launchAnimationFinished = true }
+            )
+        }
+    }
+}

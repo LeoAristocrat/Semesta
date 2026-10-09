@@ -1,0 +1,214 @@
+package com.leoaristocrat.semesta.core.di
+
+import android.content.Context
+import com.leoaristocrat.semesta.core.datastore.UserPreferencesDataSource
+import com.leoaristocrat.semesta.feature_expenses.data.RoomExpensesRepository
+import com.leoaristocrat.semesta.feature_expenses.data.local.ExpenseDao
+import com.leoaristocrat.semesta.feature_expenses.domain.ExpensesRepository
+import com.leoaristocrat.semesta.feature_grades.data.RoomGradesRepository
+import com.leoaristocrat.semesta.feature_grades.data.local.GradeDao
+import com.leoaristocrat.semesta.feature_grades.data.local.SubjectDao
+import com.leoaristocrat.semesta.feature_grades.domain.GradesRepository
+import com.leoaristocrat.semesta.feature_notes.data.LegacyNoteSheet
+import com.leoaristocrat.semesta.feature_notes.data.NoteAttachmentStore
+import com.leoaristocrat.semesta.feature_notes.data.NoteFileVault
+import com.leoaristocrat.semesta.feature_notes.data.RoomNotesRepository
+import com.leoaristocrat.semesta.feature_notes.data.local.NoteAttachmentDao
+import com.leoaristocrat.semesta.feature_notes.data.local.NoteDao
+import com.leoaristocrat.semesta.feature_notes.domain.NotesRepository
+import com.leoaristocrat.semesta.feature_schedule.data.RoomScheduleRepository
+import com.leoaristocrat.semesta.feature_schedule.data.local.AgendaEventDao
+import com.leoaristocrat.semesta.feature_terms.data.RoomAcademicBreakRepository
+import com.leoaristocrat.semesta.feature_terms.data.local.AcademicBreakDao
+import com.leoaristocrat.semesta.feature_terms.data.RoomAcademicTermRepository
+import com.leoaristocrat.semesta.feature_terms.data.local.AcademicTermDao
+import com.leoaristocrat.semesta.feature_terms.domain.AcademicBreakRepository
+import com.leoaristocrat.semesta.feature_terms.domain.AcademicTermRepository
+import com.leoaristocrat.semesta.feature_schedule.data.local.ClassOccurrenceDao
+import com.leoaristocrat.semesta.feature_schedule.data.local.ClassSessionDao
+import com.leoaristocrat.semesta.feature_schedule.domain.ScheduleRepository
+import com.leoaristocrat.semesta.feature_sync.data.FirebaseCloudBackupRepository
+import com.leoaristocrat.semesta.feature_sync.data.LocalJsonBackupRepository
+import com.leoaristocrat.semesta.feature_sync.domain.CloudBackupRepository
+import com.leoaristocrat.semesta.feature_sync.domain.LocalBackupRepository
+import com.leoaristocrat.semesta.feature_tasks.data.RoomTasksRepository
+import com.leoaristocrat.semesta.feature_tasks.data.TaskAttachmentStore
+import com.leoaristocrat.semesta.feature_tasks.data.local.TaskAttachmentDao
+import com.leoaristocrat.semesta.feature_tasks.data.local.TaskDao
+import com.leoaristocrat.semesta.feature_tasks.domain.TasksRepository
+import com.leoaristocrat.semesta.feature_templates.data.RoomAcademicWorksRepository
+import com.leoaristocrat.semesta.feature_templates.data.local.AcademicWorkDao
+import com.leoaristocrat.semesta.feature_templates.domain.AcademicWorksRepository
+import com.leoaristocrat.semesta.feature_user.data.DataStoreUserRepository
+import com.leoaristocrat.semesta.feature_user.domain.UserRepository
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object RepositoriesModule {
+
+    @Provides
+    @Singleton
+    fun provideUserRepository(dataSource: UserPreferencesDataSource): UserRepository =
+        DataStoreUserRepository(dataSource)
+
+    @Provides
+    @Singleton
+    fun provideGradesRepository(
+        subjectDao: SubjectDao,
+        gradeDao: GradeDao,
+        userRepository: UserRepository,
+        termRepository: AcademicTermRepository
+    ): GradesRepository = RoomGradesRepository(
+        subjectDao = subjectDao,
+        gradeDao = gradeDao,
+        userRepository = userRepository,
+        activeTermId = { termRepository.activeTerm.value?.id }
+    )
+
+    @Provides
+    @Singleton
+    fun provideTasksRepository(
+        taskDao: TaskDao,
+        attachmentDao: TaskAttachmentDao,
+        userRepository: UserRepository
+    ): TasksRepository = RoomTasksRepository(
+        taskDao = taskDao,
+        attachmentDao = attachmentDao,
+        userRepository = userRepository
+    )
+
+    @Provides
+    @Singleton
+    fun provideNoteAttachmentStore(@ApplicationContext context: Context): NoteAttachmentStore =
+        NoteAttachmentStore(context)
+
+    @Provides
+    @Singleton
+    fun provideTaskAttachmentStore(@ApplicationContext context: Context): TaskAttachmentStore =
+        TaskAttachmentStore(context)
+
+    @Provides
+    @Singleton
+    fun provideRoomFileStore(@ApplicationContext context: Context): com.leoaristocrat.semesta.feature_rooms.data.RoomFileStore =
+        com.leoaristocrat.semesta.feature_rooms.data.RoomFileStore(context)
+
+    @Provides
+    @Singleton
+    fun provideNotesRepository(
+        noteDao: NoteDao,
+        attachmentDao: NoteAttachmentDao,
+        userRepository: UserRepository,
+        attachmentStore: NoteAttachmentStore,
+        @ApplicationContext context: Context
+    ): NotesRepository = RoomNotesRepository(
+        noteDao = noteDao,
+        attachmentDao = attachmentDao,
+        userRepository = userRepository,
+        legacySheet = { LegacyNoteSheet.take(context) },
+        fileVault = NoteFileVault { nombres -> attachmentStore.deleteAll(nombres) }
+    )
+
+    @Provides
+    @Singleton
+    fun provideExpensesRepository(
+        expenseDao: ExpenseDao,
+        userRepository: UserRepository
+    ): ExpensesRepository = RoomExpensesRepository(
+        expenseDao = expenseDao,
+        userRepository = userRepository
+    )
+
+    @Provides
+    @Singleton
+    fun provideAcademicWorksRepository(
+        academicWorkDao: AcademicWorkDao,
+        userRepository: UserRepository
+    ): AcademicWorksRepository = RoomAcademicWorksRepository(
+        academicWorkDao = academicWorkDao,
+        userRepository = userRepository
+    )
+
+    @Provides
+    @Singleton
+    fun provideWorkRoomsRepository(
+        workRoomDao: com.leoaristocrat.semesta.feature_rooms.data.local.WorkRoomDao,
+        userRepository: UserRepository
+    ): com.leoaristocrat.semesta.feature_rooms.domain.WorkRoomsRepository =
+        com.leoaristocrat.semesta.feature_rooms.data.RoomWorkRoomsRepository(workRoomDao, userRepository)
+
+    @Provides
+    @Singleton
+    fun provideAcademicTermRepository(
+        academicTermDao: AcademicTermDao,
+        userRepository: UserRepository
+    ): AcademicTermRepository = RoomAcademicTermRepository(
+        dao = academicTermDao,
+        userRepository = userRepository
+    )
+
+    @Provides
+    @Singleton
+    fun provideAcademicBreakRepository(
+        academicBreakDao: AcademicBreakDao,
+        userRepository: UserRepository
+    ): AcademicBreakRepository = RoomAcademicBreakRepository(
+        dao = academicBreakDao,
+        userRepository = userRepository
+    )
+
+    @Provides
+    @Singleton
+    fun provideScheduleRepository(
+        classSessionDao: ClassSessionDao,
+        classOccurrenceDao: ClassOccurrenceDao,
+        agendaEventDao: AgendaEventDao,
+        userRepository: UserRepository
+    ): ScheduleRepository = RoomScheduleRepository(
+        dao = classSessionDao,
+        occurrenceDao = classOccurrenceDao,
+        agendaEventDao = agendaEventDao,
+        userRepository = userRepository
+    )
+
+    @Provides
+    @Singleton
+    fun provideCloudBackupRepository(
+        @ApplicationContext context: Context,
+        userRepository: UserRepository,
+        localBackupRepository: LocalBackupRepository
+    ): CloudBackupRepository = FirebaseCloudBackupRepository(
+        context = context,
+        userRepository = userRepository,
+        localBackupRepository = localBackupRepository
+    )
+
+    @Provides
+    @Singleton
+    fun provideLocalBackupRepository(
+        userRepository: UserRepository,
+        gradesRepository: GradesRepository,
+        tasksRepository: TasksRepository,
+        expensesRepository: ExpensesRepository,
+        academicWorksRepository: AcademicWorksRepository,
+        scheduleRepository: ScheduleRepository,
+        notesRepository: NotesRepository,
+        termRepository: AcademicTermRepository,
+        breakRepository: AcademicBreakRepository
+    ): LocalBackupRepository = LocalJsonBackupRepository(
+        userRepository = userRepository,
+        gradesRepository = gradesRepository,
+        tasksRepository = tasksRepository,
+        expensesRepository = expensesRepository,
+        academicWorksRepository = academicWorksRepository,
+        scheduleRepository = scheduleRepository,
+        notesRepository = notesRepository,
+        termRepository = termRepository,
+        breakRepository = breakRepository
+    )
+}

@@ -1,0 +1,270 @@
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+
+package com.leoaristocrat.semesta.feature_support.presentation
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Extension
+import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.TextFields
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.leoaristocrat.semesta.R
+import com.leoaristocrat.semesta.core.design.components.SettingsGroup
+import com.leoaristocrat.semesta.core.design.components.SettingsRow
+import com.leoaristocrat.semesta.core.design.components.SettingsSoloRow
+import com.leoaristocrat.semesta.core.design.theme.tonosDeAjustes
+import com.leoaristocrat.semesta.core.design.components.SemestaButton
+import com.leoaristocrat.semesta.core.design.components.SemestaButtonVariant
+import com.leoaristocrat.semesta.feature_support.domain.Biblioteca
+import com.leoaristocrat.semesta.feature_support.domain.BibliotecasDelJson
+import com.leoaristocrat.semesta.feature_support.domain.FuenteEmpaquetada
+import com.leoaristocrat.semesta.feature_support.domain.FuentesEmpaquetadas
+import com.leoaristocrat.semesta.feature_support.domain.TextoDeLicencia
+import com.leoaristocrat.semesta.feature_support.domain.comoParrafos
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+/**
+ * Ajustes › Acerca de › Licencias: lo que la app lleva de otros y bajo qué condiciones.
+ *
+ * Dos grupos. **Tipografías**: las ocho familias de `res/font`, bajo la SIL Open Font License,
+ * que exige que su texto y el aviso de cada una viajen con las fuentes. **Bibliotecas**: lo
+ * que sale del JSON que genera el plugin de AboutLibraries en cada compilación (nombre,
+ * versión y licencia de cada dependencia), leído por [BibliotecasDelJson] y pintado con las
+ * piezas de la app. Tocar una fila abre la licencia en una hoja.
+ */
+@Composable
+fun LicensesScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val librerias by produceState<List<Biblioteca>>(initialValue = emptyList()) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                context.resources.openRawResource(R.raw.aboutlibraries).bufferedReader().use { it.readText() }
+            }.mapCatching(BibliotecasDelJson::leer).getOrDefault(emptyList())
+        }
+    }
+    var abierta by remember { mutableStateOf<Licencia?>(null) }
+
+    SupportScaffold(
+        title = stringResource(R.string.licenses_title),
+        subtitle = stringResource(R.string.licenses_subtitle),
+        onBackClick = onBackClick,
+        modifier = modifier
+    ) {
+        item(key = "fuentes") {
+            SettingsGroup(label = stringResource(R.string.licenses_fonts_header), rowCount = FuentesEmpaquetadas.todas.size) {
+                FuentesEmpaquetadas.todas.forEach { fuente ->
+                    SettingsRow(
+                        icon = Icons.Rounded.TextFields,
+                        title = fuente.nombre,
+                        subtitle = stringResource(R.string.licenses_ofl_short),
+                        iconColor = tonosDeAjustes.indigo,
+                        onClick = { abierta = Licencia.DeFuente(fuente) }
+                    )
+                }
+            }
+        }
+        item(key = "librerias") {
+            val rotulo = if (librerias.isEmpty()) {
+                stringResource(R.string.licenses_libraries_header)
+            } else {
+                stringResource(R.string.licenses_libraries_header_count, librerias.size)
+            }
+            /*
+             * Las 180 bibliotecas llegaban de golpe en este mismo item y Compose las componía
+             * todas en un solo frame en cuanto terminaba de leer el JSON: un segundo entero
+             * congelado justo después de entrar a la pantalla. `SettingsGroup` necesita conocer
+             * su número de filas de antemano para dar la forma a la primera y a la última, así
+             * que no se puede repartir en items propios de la LazyColumn sin perder esa forma;
+             * en su lugar se muestran solo las primeras y el resto se compone bajo pedido.
+             */
+            var mostrarTodas by remember { mutableStateOf(false) }
+            val visibles = if (mostrarTodas || librerias.size <= LIMITE_INICIAL) librerias else librerias.take(LIMITE_INICIAL)
+            val hayMas = !mostrarTodas && librerias.size > LIMITE_INICIAL
+            SettingsGroup(label = rotulo, rowCount = maxOf(1, visibles.size + if (hayMas) 1 else 0)) {
+                if (librerias.isEmpty()) {
+                    SettingsSoloRow {
+                        Text(
+                            text = stringResource(R.string.licenses_libraries_loading),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
+                        )
+                    }
+                }
+                visibles.forEach { lib ->
+                    SettingsRow(
+                        icon = Icons.Rounded.Extension,
+                        title = lib.nombre,
+                        subtitle = listOfNotNull(lib.version, lib.licencia?.nombre).joinToString(" · "),
+                        iconColor = tonosDeAjustes.turquesa,
+                        onClick = { abierta = Licencia.DeLibreria(lib) }
+                    )
+                }
+                if (hayMas) {
+                    SettingsRow(
+                        icon = Icons.Rounded.ExpandMore,
+                        title = stringResource(R.string.licenses_libraries_show_all, librerias.size),
+                        subtitle = stringResource(R.string.licenses_libraries_show_all_desc),
+                        iconColor = tonosDeAjustes.turquesa,
+                        onClick = { mostrarTodas = true }
+                    )
+                }
+            }
+        }
+    }
+
+    abierta?.let { licencia ->
+        HojaDeLicencia(licencia = licencia, onDismiss = { abierta = null })
+    }
+}
+
+/** Cuántas bibliotecas se componen al entrar, antes de que «Ver todas» pida el resto. */
+private const val LIMITE_INICIAL = 20
+
+/** Lo que se abre en la hoja: una fuente o una biblioteca. */
+private sealed interface Licencia {
+    data class DeFuente(val fuente: FuenteEmpaquetada) : Licencia
+    data class DeLibreria(val libreria: Biblioteca) : Licencia
+}
+
+
+/**
+ * La licencia entera, en una hoja.
+ *
+ * El texto sale del asset si la licencia es una de las que empaquetamos (OFL, Apache 2.0),
+ * o del JSON del plugin si la trajo; si no hay texto, queda el enlace a la licencia en la web.
+ */
+@Composable
+private fun HojaDeLicencia(licencia: Licencia, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val titulo: String
+    val aviso: String?
+    val url: String?
+    val asset: TextoDeLicencia?
+    val textoDelJson: String?
+    when (licencia) {
+        is Licencia.DeFuente -> {
+            titulo = licencia.fuente.nombre
+            aviso = licencia.fuente.aviso
+            url = licencia.fuente.url
+            asset = TextoDeLicencia.OFL
+            textoDelJson = null
+        }
+        is Licencia.DeLibreria -> {
+            val lib = licencia.libreria
+            val lic = lib.licencia
+            titulo = lib.nombre
+            aviso = listOfNotNull(
+                lib.version?.let { "v$it" },
+                lib.autores.takeIf { it.isNotEmpty() }?.joinToString(", "),
+                lic?.nombre
+            ).joinToString(" · ").ifBlank { null }
+            url = lic?.url ?: lib.web
+            asset = TextoDeLicencia.porSpdx(lic?.spdxId)
+            textoDelJson = lic?.texto
+        }
+    }
+
+    val texto by produceState<String?>(initialValue = null, asset, textoDelJson) {
+        value = withContext(Dispatchers.IO) {
+            when {
+                asset != null -> runCatching {
+                    context.assets.open(asset.asset).bufferedReader().use { it.readText() }
+                }.getOrNull()
+                else -> textoDelJson
+            }?.comoParrafos()
+        }
+    }
+
+    ModalBottomSheet(
+        sheetState = sheetState,
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(start = 22.dp, end = 22.dp, bottom = 26.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(text = titulo, style = MaterialTheme.typography.titleLargeEmphasized)
+                if (aviso != null) {
+                    Text(
+                        text = aviso,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (url != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SemestaButton(
+                        text = stringResource(R.string.licenses_open_site),
+                        onClick = { abrirEnElNavegador(context, url) },
+                        variant = SemestaButtonVariant.Tonal,
+                        leadingIcon = Icons.Rounded.OpenInNew
+                    )
+                }
+            }
+            when {
+                texto != null -> Text(
+                    text = texto!!,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                asset == null && textoDelJson == null -> Text(
+                    text = stringResource(R.string.licenses_only_online),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/** Abre una dirección en el navegador del teléfono, o avisa si no hay con qué. */
+internal fun abrirEnElNavegador(context: android.content.Context, url: String) {
+    runCatching {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }.onFailure {
+        android.widget.Toast.makeText(
+            context,
+            com.leoaristocrat.semesta.core.utils.Textos.get(R.string.notes_error_no_app_to_open),
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
+    }
+}

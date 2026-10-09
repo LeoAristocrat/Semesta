@@ -1,0 +1,1072 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
+package com.leoaristocrat.semesta.feature_grades.presentation
+
+import androidx.compose.ui.res.stringResource
+import com.leoaristocrat.semesta.R
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ColorLens
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.School
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import com.leoaristocrat.semesta.feature_grades.domain.Subject
+import com.leoaristocrat.semesta.core.design.theme.SectionLabelStyle
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import com.leoaristocrat.semesta.core.design.components.avisoDeError
+import com.leoaristocrat.semesta.core.design.components.SemestaBackButton
+import com.leoaristocrat.semesta.core.design.components.SemestaSwitch
+import androidx.compose.material3.Text
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import com.leoaristocrat.semesta.core.utils.toColorIntOrNull
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.leoaristocrat.semesta.core.design.components.SemestaCard
+import com.leoaristocrat.semesta.core.design.components.SemestaButton
+import com.leoaristocrat.semesta.core.design.theme.LocalInterfaceSpacing
+import com.leoaristocrat.semesta.core.design.theme.SubjectColorPalette
+import com.leoaristocrat.semesta.core.design.theme.scrollBottomRoom
+import com.leoaristocrat.semesta.core.design.components.bottomActionInsets
+import com.leoaristocrat.semesta.core.design.components.dismissKeyboardOnTapOutside
+import com.leoaristocrat.semesta.core.design.components.rememberLeaveGuard
+import com.leoaristocrat.semesta.core.utils.NO_DATA
+import com.leoaristocrat.semesta.core.utils.TextValidators
+import com.leoaristocrat.semesta.core.utils.GradingScaleUtils
+import com.leoaristocrat.semesta.feature_grades.domain.SubjectVisualType
+import com.leoaristocrat.semesta.feature_user.domain.GradingCutScheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+
+import com.leoaristocrat.semesta.core.design.theme.contentColorOn
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import com.leoaristocrat.semesta.core.design.components.SemestaButtonDefaults
+import androidx.compose.runtime.setValue
+/**
+ * De dónde se entra al formulario de materia.
+ *
+ * Es la misma pantalla en los dos casos: lo único que cambia es qué bloque llega abierto y si
+ * el horario se puede apagar. Antes eran dos formularios distintos para la misma entidad
+ * —«Agregar materia» desde Académico y el diálogo «Nueva materia» desde Horario— y divergían
+ * en todo lo que nadie sincronizaba a mano: la paleta, las horas por defecto y el sitio del
+ * botón de guardar.
+ */
+enum class SubjectFormMode {
+    /** Desde Académico: la materia es el asunto, y el bloque académico llega abierto. */
+    ACADEMIC,
+
+    /** Desde Horario: la clase es el asunto. El bloque académico llega plegado. */
+    SCHEDULE
+}
+
+@Composable
+fun SubjectFormScreen(
+    onBackClick: () -> Unit,
+    onSubjectSaved: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: GradesViewModel = hiltViewModel(),
+    subjectId: String? = null,
+    mode: SubjectFormMode = SubjectFormMode.ACADEMIC
+) {
+    val subjects by viewModel.subjects.collectAsStateWithLifecycle()
+    val classSessions by viewModel.classSessions.collectAsStateWithLifecycle()
+    val profile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val scale = profile?.gradingScale ?: com.leoaristocrat.semesta.feature_user.domain.GradingScale.ZERO_TO_FIVE
+    val maxGrade = profile?.let(GradingScaleUtils::maxGradeFor) ?: 5.0
+    val maxGradeLabel = GradingScaleUtils.formatGrade(maxGrade, scale)
+    val defaultAverage = profile?.targetAverage ?: 4.0
+    val isEditing = subjectId != null
+    val subject = subjectId?.let { id -> subjects.firstOrNull { it.id == id } }
+    val subjectSessions = subjectId?.let { id -> classSessions.filter { it.subjectId == id } }.orEmpty()
+    val subjectSchedule = subjectSessions.firstOrNull()
+    val defaultCutScheme = subject?.cutScheme ?: profile?.gradingCutScheme ?: GradingCutScheme.default()
+    // Desde Horario no tiene sentido guardar una materia sin clase: es justo lo que se venía
+    // a crear. El interruptor solo aparece en la ruta académica.
+    val scheduleIsOptional = mode == SubjectFormMode.ACADEMIC
+
+    // El acento de cada tipo se resuelve aqui, en contexto composable. Dentro de
+    // remember o LaunchedEffect no se puede leer el tema, y antes se leia porque el
+    // color no venia del tema sino de un objeto global.
+    val accentArgbByType = SubjectVisualType.entries.associateWith { subjectAccent(it).toArgb() }
+
+    var name by remember { mutableStateOf("") }
+    var targetAverage by remember { mutableStateOf("") }
+    var visualType by remember { mutableStateOf(SubjectVisualType.TEAL) }
+    var customColor by remember { mutableStateOf<Int?>(accentArgbByType.getValue(SubjectVisualType.TEAL)) }
+    // Vacío mientras nadie lo elija. En edición se carga el que ya tuviera la materia,
+    // para no borrar una elección hecha desde su pantalla.
+    var activeCutId by remember { mutableStateOf("") }
+    // Varias franjas por materia: «Lun y Mié 8-10» y «Vie 14-16» son la misma materia.
+    var scheduleDrafts by remember(subjectId) { mutableStateOf(listOf(defaultSubjectScheduleDraft())) }
+    val scheduleDraft = scheduleDrafts.first()
+    var scheduleInitialized by remember(subjectId) { mutableStateOf(false) }
+    // La materia que se llama igual, si la hay: sale el aviso antes de crear una repetida.
+    var duplicada by remember(subjectId) { mutableStateOf<Subject?>(null) }
+    var initialized by remember(subjectId) { mutableStateOf(false) }
+    var academicExpanded by rememberSaveable(mode) { mutableStateOf(mode == SubjectFormMode.ACADEMIC) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var saveBarHeight by remember { mutableStateOf(0.dp) }
+    val density = LocalDensity.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val formScrollState = rememberScrollState()
+    val spacing = LocalInterfaceSpacing.current
+    // Al crear, cualquier dato escrito cuenta. Al editar, solo lo que se aparte de la materia
+    // guardada: el color y el horario se cargan solos y preguntarían por cambios de nadie.
+    val hasUnsavedChanges = if (subject == null) {
+        name.isNotBlank() || targetAverage.isNotBlank() ||
+            scheduleDraft.professor.isNotBlank() || scheduleDraft.room.isNotBlank() ||
+            scheduleDraft.daysOfWeek.isNotEmpty()
+    } else {
+        name != subject.name ||
+            targetAverage != GradingScaleUtils.formatGrade(subject.targetAverage, scale) ||
+            customColor != subject.customColor
+    }
+    val toastUpdated = stringResource(R.string.subject_form_updated_toast)
+    val toastCreated = stringResource(R.string.subject_form_created_toast)
+    val validationErrorMsg = stringResource(R.string.subject_form_validation_error)
+    val scheduleWarningMsg = stringResource(R.string.subject_form_schedule_warning)
+    val requestLeave = rememberLeaveGuard(
+        hasUnsavedChanges = hasUnsavedChanges,
+        onLeave = onBackClick,
+        message = if (subject == null) {
+            stringResource(R.string.subject_form_leave_create)
+        } else {
+            stringResource(R.string.subject_form_leave_edit)
+        }
+    )
+
+    val targetValue = targetAverage.toDoubleOrNull()
+    val nameValidation = TextValidators.validateSubjectName(name)
+    val isNameValid = name.isBlank() || nameValidation.isValid
+    val canEditLoadedSubject = !isEditing || subject != null
+    val accent = customColor?.let(::Color) ?: subjectAccent(visualType)
+    // La meta bloquea el guardado, así que el bloque académico no puede quedarse plegado
+    // escondiéndola: el botón se apagaría sin que se vea por qué. Se condiciona a que el
+    // formulario ya esté cargado para que no se despliegue en el primer fotograma, cuando el
+    // campo todavía está vacío porque nadie lo ha rellenado aún.
+    val targetBlocksSave = initialized && (targetValue == null || targetValue !in 0.0..maxGrade)
+    val isValid = canEditLoadedSubject &&
+        nameValidation.isValid &&
+        targetValue != null &&
+        targetValue in 0.0..maxGrade &&
+        scheduleDraft.isValid
+
+    LaunchedEffect(subject?.id, defaultAverage, scale, subjectId) {
+        if (initialized) return@LaunchedEffect
+
+        if (subject != null) {
+            name = subject.name
+            targetAverage = GradingScaleUtils.formatGrade(subject.targetAverage, scale)
+            visualType = subject.visualType
+            customColor = subject.customColor ?: accentArgbByType.getValue(subject.visualType)
+            activeCutId = subject.activeCutId
+            initialized = true
+        } else if (!isEditing) {
+            targetAverage = GradingScaleUtils.formatGrade(defaultAverage, scale)
+            customColor = accentArgbByType.getValue(visualType)
+            activeCutId = ""
+            initialized = true
+        }
+    }
+
+    LaunchedEffect(subject?.id, subjectSessions.size, subjectSchedule?.id, subjectId) {
+        when {
+            subjectSessions.isNotEmpty() -> {
+                scheduleDrafts = subjectSessions.map { it.toSubjectScheduleDraft() }
+                scheduleInitialized = true
+            }
+            !scheduleInitialized && isEditing && subject != null -> {
+                scheduleDrafts = listOf(defaultSubjectScheduleDraft().copy(enabled = !scheduleIsOptional))
+                scheduleInitialized = true
+            }
+            !scheduleInitialized && !isEditing -> {
+                scheduleDrafts = listOf(defaultSubjectScheduleDraft())
+                scheduleInitialized = true
+            }
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .dismissKeyboardOnTapOutside()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(formScrollState)
+                .statusBarsPadding()
+                .padding(horizontal = spacing.screenHorizontal)
+                .padding(top = 10.dp, bottom = saveBarHeight + scrollBottomRoom),
+            verticalArrangement = Arrangement.spacedBy(spacing.section)
+        ) {
+            SubjectFormHeader(
+                title = if (isEditing) stringResource(R.string.subject_form_edit_title) else stringResource(R.string.subject_form_create_title),
+                subtitle = when {
+                    name.isNotBlank() -> name
+                    mode == SubjectFormMode.SCHEDULE -> stringResource(R.string.subject_form_edit_subtitle)
+                    else -> stringResource(R.string.subject_form_create_subtitle)
+                },
+                accent = accent,
+                initial = name.trim().firstOrNull()?.uppercaseChar(),
+                onBackClick = requestLeave
+            )
+            if (isEditing && subject == null) {
+                SemestaCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    shape = MaterialTheme.shapes.large,
+                    tonalElevation = 0.dp,
+                ) {
+                    Text(stringResource(R.string.subject_not_found), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            FormBlock(
+                title = stringResource(R.string.subject_form_identity_card),
+                icon = Icons.Rounded.School,
+                accent = accent,
+                // El único bloque teñido con el color de la materia: es el que lo elige, y
+                // así el acento se ve aplicado antes de guardar.
+                tinted = true
+            ) {
+                var nombreEnfocado by remember { mutableStateOf(false) }
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it.take(40)
+                        error = null
+                    },
+                    label = { Text(stringResource(R.string.subject_form_name)) },
+                    placeholder = { Text(stringResource(R.string.subject_form_name_placeholder)) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    /*
+                     * **Sacude al salir del campo, no en cada tecla.**
+                     *
+                     * Colgaba de `!isNameValid` a secas, y ese valor cambia con cada letra:
+                     * al empezar a escribir el nombre todavia no vale, asi que el campo
+                     * temblaba **mientras** escribias, antes de que hubieras terminado.
+                     *
+                     * Mientras el dedo esta dentro, el rojo y el texto de ayuda bastan. El
+                     * temblor dice «lo has dejado mal», y eso solo se sabe cuando lo dejas.
+                     */
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { nombreEnfocado = it.isFocused }
+                        .avisoDeError(!isNameValid && !nombreEnfocado),
+                    isError = !isNameValid,
+                    supportingText = {
+                        if (!isNameValid) {
+                            Text(nameValidation.errorMessage ?: stringResource(R.string.subject_form_name_error))
+                        }
+                    }
+                )
+                SubjectColorField(
+                    selectedColor = customColor ?: subjectAccent(visualType).toArgb(),
+                    onSelected = { color ->
+                        customColor = color
+                        visualType = closestVisualType(Color(color), accentArgbByType)
+                    }
+                )
+                // El profesor se guarda dentro del bloque de clase, que es donde lo aloja el
+                // modelo: sin horario no hay dónde ponerlo. Se avisa en vez de perderlo en
+                // silencio.
+                val professorHint: (@Composable () -> Unit)? =
+                    if (!scheduleDraft.enabled && scheduleDraft.professor.isNotBlank()) {
+                        { Text(stringResource(R.string.subject_form_professor_hint)) }
+                    } else {
+                        null
+                    }
+                OutlinedTextField(
+                    value = scheduleDraft.professor,
+                    // El profesor es de la materia, no de una franja suelta: va en todas.
+                    onValueChange = { texto ->
+                        scheduleDrafts = scheduleDrafts.map { it.copy(professor = texto.take(60)) }
+                    },
+                    label = { Text(stringResource(R.string.subject_form_professor)) },
+                    placeholder = { Text(stringResource(R.string.subject_form_professor_placeholder)) },
+                    leadingIcon = { Icon(Icons.Rounded.Person, null) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = professorHint
+                )
+            }
+
+            FormBlock(
+                title = stringResource(R.string.subject_form_schedule_section),
+                icon = Icons.Rounded.CalendarMonth,
+                accent = accent,
+                summary = scheduleDraft.whenSummary(),
+                expanded = scheduleDraft.enabled,
+                trailing = if (scheduleIsOptional) {
+                    {
+                        SemestaSwitch(
+                            checked = scheduleDraft.enabled,
+                            onCheckedChange = { marcado ->
+                                scheduleDrafts = scheduleDrafts.map { it.copy(enabled = marcado) }
+                            }
+                        )
+                    }
+                } else {
+                    null
+                }
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    scheduleDrafts.forEachIndexed { indice, franja ->
+                        if (indice > 0) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.subject_form_schedule_slot, indice + 1),
+                                    style = SectionLabelStyle,
+                                    color = accent,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(
+                                    onClick = {
+                                        scheduleDrafts = scheduleDrafts.filterIndexed { i, _ -> i != indice }
+                                        error = null
+                                    }
+                                ) { Text(stringResource(R.string.subject_form_schedule_remove_slot)) }
+                            }
+                        }
+                        SubjectWhenFields(
+                            draft = franja,
+                            onDraftChange = { cambiada ->
+                                scheduleDrafts = scheduleDrafts.mapIndexed { i, previa ->
+                                    if (i == indice) cambiada else previa
+                                }
+                                error = null
+                            },
+                            // Las de las demas materias, y las otras franjas de esta: una
+                            // materia sí puede pisarse consigo misma si te equivocas de hora.
+                            otrasClases = classSessions.filter { it.subjectId != subjectId } +
+                                scheduleDrafts.filterIndexed { i, otra -> i != indice && otra.enabled }
+                                    .map { it.toClassSessionPreview(subjectId.orEmpty()) }
+                        )
+                    }
+                    if (scheduleDraft.enabled) {
+                        TextButton(
+                            onClick = {
+                                scheduleDrafts = scheduleDrafts + defaultSubjectScheduleDraft()
+                                error = null
+                            }
+                        ) {
+                            Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.subject_form_schedule_add_slot))
+                        }
+                    }
+                }
+            }
+
+            FormBlock(
+                title = stringResource(R.string.subject_form_academic_section),
+                icon = Icons.Rounded.AutoAwesome,
+                accent = accent,
+                summary = academicSummary(
+                    targetAverage = targetAverage,
+                    cutScheme = defaultCutScheme,
+                    activeCutId = activeCutId,
+                    reminderMinutes = scheduleDraft.reminderMinutes
+                ),
+                expanded = academicExpanded || targetBlocksSave,
+                onHeaderClick = { academicExpanded = !academicExpanded }
+            ) {
+                OutlinedTextField(
+                    value = targetAverage,
+                    onValueChange = {
+                        targetAverage = it
+                        error = null
+                    },
+                    label = { Text(stringResource(R.string.subject_form_target_average, maxGradeLabel)) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth(),
+                    // También en blanco: sin meta no se puede guardar, y marcarlo solo cuando
+                    // hay algo escrito dejaba el campo vacío con aspecto de correcto.
+                    isError = targetBlocksSave
+                )
+                // El corte en el que va la materia se pregunta en su pantalla, no aquí. Al
+                // crearla no hay con qué juzgarlo —ni cortes con notas ni nada que mirar— y
+                // el selector llegaba con el primero ya marcado, así que la app elegía por el
+                // usuario y luego le reclamaba el historial de unos cortes que él nunca dijo
+                // haber cursado.
+                if (scheduleDraft.enabled) {
+                    SubjectReminderField(
+                        draft = scheduleDraft,
+                        // El recordatorio es de la materia: se aplica a todas sus franjas.
+                        onDraftChange = { cambiada ->
+                            scheduleDrafts = scheduleDrafts.map {
+                                it.copy(reminderMinutes = cambiada.reminderMinutes)
+                            }
+                        }
+                    )
+                }
+            }
+
+            error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+            }
+        }
+        // La barra llega hasta el borde inferior de la pantalla y el margen del sistema va
+        // por dentro. Con navigationBarsPadding() por fuera se levantaba entera y dejaba
+        // una franja transparente debajo por la que se veía pasar el formulario al
+        // desplazarse: eso era lo que se veía cortado.
+        Surface(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                // El hueco que el formulario deja al final sale de medir la barra, no de un
+                // número a mano: la barra crece con el teclado y con la barra de gestos, y
+                // los 112dp fijos de antes se quedaban cortos o sobraban según el móvil.
+                .onSizeChanged { saveBarHeight = with(density) { it.height.toDp() } },
+            // Opaca del todo. Al 98% el contenido se traslucía por debajo y parecía que la
+            // barra estaba superpuesta sobre todo.
+            color = MaterialTheme.colorScheme.background,
+            shadowElevation = 8.dp
+        ) {
+            SemestaButton(
+                text = if (isEditing) stringResource(R.string.subject_form_save_changes) else stringResource(R.string.subject_form_save_subject),
+                enabled = isValid,
+                onClick = guardar@{
+                    val editingSubjectId = subjectId
+                    // Antes de crear una nueva, mirar si ya hay una con ese nombre: la mayoría
+                    // de las veces no es otra materia, es la misma en otro horario.
+                    val gemela = if (editingSubjectId == null) {
+                        viewModel.subjectWithSameName(TextValidators.normalizeText(name))
+                    } else {
+                        null
+                    }
+                    if (gemela != null) {
+                        duplicada = gemela
+                        return@guardar
+                    }
+                    val savedSubjectId = if (editingSubjectId != null) {
+                        val saved = viewModel.updateSubject(
+                            subjectId = editingSubjectId,
+                            name = TextValidators.normalizeText(name),
+                            targetAverage = targetValue ?: defaultAverage,
+                            visualType = visualType,
+                            customColor = customColor,
+                            activeCutId = activeCutId
+                        )
+                        if (saved) editingSubjectId else null
+                    } else {
+                        viewModel.addSubject(
+                            name = TextValidators.normalizeText(name),
+                            targetAverage = targetValue ?: defaultAverage,
+                            visualType = visualType,
+                            customColor = customColor,
+                            activeCutId = activeCutId
+                        )?.id
+                    }
+
+                    val scheduleSaved = savedSubjectId?.let { id ->
+                        viewModel.saveSubjectSchedule(
+                            subjectId = id,
+                            drafts = scheduleDrafts.map { franja ->
+                                franja.copy(
+                                    recurrenceStartEpochDay = franja.recurrenceStartEpochDay
+                                        .takeIf { it > 0L }
+                                        ?: LocalDate.now().toEpochDay()
+                                )
+                            }
+                        )
+                    } ?: false
+
+                    when {
+                        savedSubjectId == null -> {
+                            error = validationErrorMsg
+                        }
+                        !scheduleSaved -> {
+                            error = scheduleWarningMsg
+                        }
+                        else -> {
+                            scope.launch {
+                                launch {
+                                    snackbarHostState.showSnackbar(
+                                        if (isEditing) toastUpdated else toastCreated
+                                    )
+                                }
+                                delay(650)
+                                onSubjectSaved(savedSubjectId)
+                            }
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .bottomActionInsets()
+                    .padding(horizontal = spacing.screenHorizontal, vertical = 12.dp)
+                    .fillMaxWidth()
+            )
+        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 84.dp)
+        )
+    }
+
+    duplicada?.let { gemela ->
+        /*
+         * La red de seguridad, no el camino principal.
+         *
+         * Quien ya sabe que su materia va dos veces por semana la dice de una vez con «Añadir
+         * otro horario». Esto recoge al que no vio ese botón y estaba a punto de tener la misma
+         * materia dos veces, con las notas y la asistencia repartidas entre las dos.
+         */
+        AlertDialog(
+            onDismissRequest = { duplicada = null },
+            title = { Text(stringResource(R.string.subject_form_same_name_title)) },
+            text = { Text(stringResource(R.string.subject_form_same_name_body, gemela.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        duplicada = null
+                        val añadidas = classSessions.count { it.subjectId == gemela.id }
+                        val previas = classSessions
+                            .filter { it.subjectId == gemela.id }
+                            .map { it.toSubjectScheduleDraft() }
+                        val nuevas = scheduleDrafts.filter { it.enabled }.map { franja ->
+                            franja.copy(
+                                recurrenceStartEpochDay = franja.recurrenceStartEpochDay
+                                    .takeIf { it > 0L } ?: LocalDate.now().toEpochDay()
+                            )
+                        }
+                        if (viewModel.saveSubjectSchedule(gemela.id, previas + nuevas)) {
+                            scope.launch {
+                                launch { snackbarHostState.showSnackbar(toastUpdated) }
+                                delay(650)
+                                onSubjectSaved(gemela.id)
+                            }
+                        } else {
+                            error = scheduleWarningMsg
+                        }
+                    }
+                ) { Text(stringResource(R.string.subject_form_same_name_link)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { duplicada = null }) {
+                    Text(stringResource(R.string.subject_form_same_name_create))
+                }
+            }
+        )
+    }
+}
+
+/** Resumen del bloque académico, para leerlo de un vistazo cuando llega plegado. */
+@Composable
+private fun academicSummary(
+    targetAverage: String,
+    cutScheme: GradingCutScheme,
+    activeCutId: String,
+    reminderMinutes: Int
+): String {
+    val cut = cutScheme.cuts.firstOrNull { it.id == activeCutId }
+    return buildList {
+        add(stringResource(R.string.subject_target_label, targetAverage.ifBlank { NO_DATA }))
+        if (cutScheme.cuts.size > 1 && cut != null) add(stringResource(R.string.subject_cut_order, cut.order))
+        if (reminderMinutes > 0) add(stringResource(R.string.schedule_reminder_min, reminderMinutes))
+    }.joinToString("  ·  ")
+}
+
+@Composable
+private fun SubjectFormHeader(
+    title: String,
+    subtitle: String,
+    accent: Color,
+    initial: Char?,
+    onBackClick: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SemestaBackButton(onClick = onBackClick)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Relleno con el color elegido y no teñido al 14%: es la muestra grande de cómo
+            // se verá la materia en el resto de la app.
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(accent, MaterialTheme.shapes.medium),
+                contentAlignment = Alignment.Center
+            ) {
+                if (initial != null) {
+                    Text(
+                        initial.toString(),
+                        color = contentColorOn(accent),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                } else {
+                    Icon(
+                        Icons.Rounded.School,
+                        contentDescription = null,
+                        tint = contentColorOn(accent)
+                    )
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = subtitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Normal,
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+/**
+ * El color de la materia, dentro del bloque de identidad.
+ *
+ * Es lo que identifica la materia en toda la app —en la rejilla del horario, en las tarjetas
+ * de notas, en el calendario—, así que va con las muestras a la vista y no escondido en una
+ * fila diminuta al lado del profesor, que es donde estaba en la ruta de Horario.
+ */
+@Composable
+private fun SubjectColorField(
+    selectedColor: Int,
+    onSelected: (Int) -> Unit
+) {
+    val selected = Color(selectedColor)
+    var showEditor by remember { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.subject_form_color_title),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                selected.toHexString(),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+        val accentArgbByType = SubjectVisualType.entries.associateWith { subjectAccent(it).toArgb() }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(SubjectColorPalette, key = { it.toArgb() }) { color ->
+                ColorSwatch(
+                    color = color,
+                    label = closestVisualType(color, accentArgbByType).accessibilityLabel(),
+                    selected = color.toArgb() == selectedColor,
+                    onClick = { onSelected(color.toArgb()) }
+                )
+            }
+            item {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.28f), CircleShape)
+                        .clickable(
+                            onClickLabel = stringResource(R.string.subject_form_open_color_editor),
+                            onClick = { showEditor = true }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Rounded.ColorLens,
+                        contentDescription = stringResource(R.string.subject_form_custom_color),
+                        tint = selected,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+    }
+
+    if (showEditor) {
+        CustomSubjectColorDialog(
+            initialColor = selectedColor,
+            onDismiss = { showEditor = false },
+            onApply = {
+                onSelected(it)
+                showEditor = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun CustomSubjectColorDialog(
+    initialColor: Int,
+    onDismiss: () -> Unit,
+    onApply: (Int) -> Unit
+) {
+    /*
+     * El tono, la saturación y el valor son el estado; el color se deriva de ellos.
+     *
+     * Antes el estado era el color y el HSV se recalculaba a partir de él en cada cambio. Ese
+     * viaje de ida y vuelta no es exacto —el color se guarda en enteros de 0 a 255—, así que
+     * arrastrar por el lienzo movía un poco el tono, y como el gesto estaba atado al tono, se
+     * cancelaba solo a mitad del arrastre: el selector se quedaba pegado. Con el HSV como
+     * fuente, arrastrar la saturación no puede tocar el tono.
+     */
+    val initialHsv = remember(initialColor) {
+        FloatArray(3).also { android.graphics.Color.colorToHSV(initialColor, it) }
+    }
+    var hue by remember(initialColor) { mutableStateOf(initialHsv[0]) }
+    var saturation by remember(initialColor) { mutableStateOf(initialHsv[1]) }
+    var value by remember(initialColor) { mutableStateOf(initialHsv[2]) }
+
+    val workingColor = remember(hue, saturation, value) {
+        android.graphics.Color.HSVToColor(floatArrayOf(hue, saturation, value))
+    }
+    val selected = Color(workingColor)
+    var hexInput by remember(initialColor) { mutableStateOf(selected.toHexString()) }
+
+    LaunchedEffect(workingColor) {
+        hexInput = selected.toHexString()
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SemestaBackButton(
+                        contentDescription = stringResource(R.string.action_cancel),
+                        onClick = onDismiss
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.subject_form_custom_color),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            stringResource(R.string.subject_form_custom_color_desc),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp),
+                    shape = MaterialTheme.shapes.large,
+                    color = selected
+                ) {
+                    Box(
+                        modifier = Modifier.padding(horizontal = 18.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Text(
+                            selected.toHexString(),
+                            color = contentColorOn(selected),
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                }
+
+                SaturationValuePicker(
+                    hue = hue,
+                    saturation = saturation,
+                    value = value,
+                    onSelected = { newSaturation, newValue ->
+                        saturation = newSaturation
+                        value = newValue
+                    }
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        stringResource(R.string.subject_form_tone),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Slider(
+                        value = hue,
+                        onValueChange = { hue = it },
+                        valueRange = 0f..360f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = selected,
+                            activeTrackColor = selected,
+                            inactiveTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
+                        )
+                    )
+                }
+
+                OutlinedTextField(
+                    value = hexInput,
+                    onValueChange = { input ->
+                        val normalized = input.uppercase()
+                            .filter { it == '#' || it in '0'..'9' || it in 'A'..'F' }
+                            .take(7)
+                        hexInput = normalized
+                        normalized.toColorIntOrNull()?.let { typed ->
+                            val parsed = FloatArray(3)
+                            android.graphics.Color.colorToHSV(typed, parsed)
+                            hue = parsed[0]
+                            saturation = parsed[1]
+                            value = parsed[2]
+                        }
+                    },
+                    label = { Text(stringResource(R.string.subject_form_hex)) },
+                    placeholder = { Text("#6750F5") },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(
+                        shapes = SemestaButtonDefaults.shapes,
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                    Button(
+                        shapes = SemestaButtonDefaults.shapes,
+                        onClick = { onApply(workingColor) },
+                        colors = ButtonDefaults.buttonColors(containerColor = selected),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            stringResource(R.string.action_apply),
+                            color = contentColorOn(selected)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SaturationValuePicker(
+    hue: Float,
+    saturation: Float,
+    value: Float,
+    onSelected: (Float, Float) -> Unit
+) {
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(150.dp)
+            .clip(MaterialTheme.shapes.medium)
+            // Sin el tono como clave: reiniciar el bloque a mitad de un arrastre cancela el
+            // gesto, y el lienzo dejaba de seguir el dedo.
+            .pointerInput(Unit) {
+                fun update(offset: Offset) {
+                    onSelected(
+                        (offset.x / size.width).coerceIn(0f, 1f),
+                        (1f - offset.y / size.height).coerceIn(0f, 1f)
+                    )
+                }
+
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    update(down.position)
+                    down.consume()
+
+                    do {
+                        val event = awaitPointerEvent()
+                        event.changes.forEach { change ->
+                            if (change.pressed) {
+                                update(change.position)
+                            }
+                            change.consume()
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
+            }
+    ) {
+        // design-tokens-ok-begin: lienzo saturación/valor del selector HSV. El blanco y el
+        // negro son los ejes del espacio de color, no decisiones de marca; el cursor va en
+        // blanco con contorno oscuro para verse sobre cualquier punto del lienzo.
+        drawRect(
+            Brush.horizontalGradient(
+                listOf(Color.White, Color.hsv(hue, 1f, 1f))
+            )
+        )
+        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black)))
+        val center = Offset(saturation * size.width, (1f - value) * size.height)
+        drawCircle(Color.White, radius = 7.dp.toPx(), center = center, style = Stroke(2.dp.toPx()))
+        drawCircle(Color.Black.copy(alpha = 0.45f), radius = 9.dp.toPx(), center = center, style = Stroke(1.dp.toPx()))
+        // design-tokens-ok-end
+    }
+}
+
+private fun Color.toHexString(): String = "#%06X".format(toArgb() and 0xFFFFFF)
+
+@Composable
+private fun ColorSwatch(
+    color: Color,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val clickLabel = stringResource(R.string.subject_color_select_accessibility, label)
+    val colorTitle = stringResource(R.string.subject_form_color_title)
+    val selectedDesc = stringResource(R.string.subject_color_selected)
+    val notSelectedDesc = stringResource(R.string.subject_color_not_selected)
+
+    Box(
+        modifier = modifier
+            .size(46.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = if (selected) 1f else 0.82f))
+            .border(
+                width = if (selected) 2.dp else 0.dp,
+                color = if (selected) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f) else Color.Transparent,
+                shape = CircleShape
+            )
+            .clickable(
+                onClickLabel = clickLabel,
+                role = Role.RadioButton,
+                onClick = onClick
+            )
+            .semantics {
+                contentDescription = "$colorTitle $label"
+                stateDescription = if (selected) selectedDesc else notSelectedDesc
+            }
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (selected) {
+            Icon(Icons.Rounded.Check, contentDescription = null, tint = contentColorOn(color))
+        }
+    }
+}
+
+private fun closestVisualType(color: Color, accents: Map<SubjectVisualType, Int>): SubjectVisualType {
+    return SubjectVisualType.entries.minBy { type ->
+        val candidate = Color(accents.getValue(type))
+        val dr = candidate.red - color.red
+        val dg = candidate.green - color.green
+        val db = candidate.blue - color.blue
+        dr * dr + dg * dg + db * db
+    }
+}
+
+/**
+ * Nombre en castellano del color más cercano de la paleta.
+ *
+ * El lector de pantalla decía «Color almohadilla 1 0 B 8 A C»: el hexadecimal es exacto y no
+ * significa nada en voz alta.
+ */
+@Composable
+private fun SubjectVisualType.accessibilityLabel(): String = when (this) {
+    SubjectVisualType.TEAL -> stringResource(R.string.color_teal)
+    SubjectVisualType.BLUE -> stringResource(R.string.color_blue)
+    SubjectVisualType.CORAL -> stringResource(R.string.color_coral)
+    SubjectVisualType.PURPLE -> stringResource(R.string.color_purple)
+    SubjectVisualType.GREEN -> stringResource(R.string.color_green)
+    SubjectVisualType.YELLOW -> stringResource(R.string.color_yellow)
+    SubjectVisualType.ROSE -> stringResource(R.string.color_rose)
+    SubjectVisualType.INDIGO -> stringResource(R.string.color_indigo)
+    SubjectVisualType.ORANGE -> stringResource(R.string.color_orange)
+    SubjectVisualType.CYAN -> stringResource(R.string.color_cyan)
+    SubjectVisualType.LIME -> stringResource(R.string.color_lime)
+    SubjectVisualType.SLATE -> stringResource(R.string.color_slate)
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="downloads" path="Download/" />
+    <!-- El PDF del reporte y las copias que se comparten se escriben en la caché. -->
+    <cache-path name="exports" path="." />
+    <!-- Los adjuntos de las notas viven dentro de la app; solo se prestan para abrirlos. -->
+    <files-path name="note_attachments" path="note_attachments/" />
+    <!--
+      Los de las tareas, igual, y en su propia carpeta. Faltaba declararla: sin la raíz,
+      `FileProvider.getUriForFile` lanza, `taskAttachmentUri` lo convierte en null y el botón de
+      abrir fuera no hacía nada, con ningún tipo de adjunto.
+    -->
+    <files-path name="task_attachments" path="task_attachments/" />
+    <!-- Los archivos de las salas de Trabajos: partes subidas, aportes, material y fotos del chat. -->
+    <files-path name="room_files" path="room_files/" />
+</paths>

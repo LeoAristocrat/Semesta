@@ -1,0 +1,62 @@
+# Android / Gradle generated files
+.gradle/
+.gradle-user-home/
+.kotlin/
+.toolchains/
+build/
+*/build/
+captures/
+*.apk
+*.aab
+*.idsig
+*.log
+release-artifacts/
+
+# Local design exploration and visual review evidence
+/designs/
+/docs/visual-review/
+
+# Private machine and service configuration
+local.properties
+.signing/
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.key
+*.pem
+.env
+.env.*
+google-services.json
+*-service-account*.json
+service-account*.json
+.aws/
+.codex/
+
+# Editor and local agent state; installed skills stay on this machine
+.idea/
+*.iml
+.claude/
+.agents/
+AGENTS.md
+skills-lock.json
+.editorconfig
+.antigravitycli/
+.android-avd/
+.review-api/
+design-system/
+Semesta development/
+
+# Local recovery material and one-time migration tools
+migration-snapshot.zip
+CONTEXTO.md
+PUBLICAR.md
+COMPILAR.md
+/docs/imported-history/
+/scripts/migrate_identity.py
+/scripts/india_migration.py
+/scripts/india_features.py
+/scripts/india_navigation.py
+/scripts/refine_features.py
+/scripts/refine_theme_picker.py
+/scripts/compose_locale_refinement.py

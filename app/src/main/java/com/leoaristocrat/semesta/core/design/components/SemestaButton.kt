@@ -1,0 +1,152 @@
+package com.leoaristocrat.semesta.core.design.components
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.leoaristocrat.semesta.core.design.theme.contentColorOn
+
+/** Variantes visuales del botón, en la jerarquía de énfasis de Material. */
+enum class SemestaButtonVariant {
+    /** Relleno con el color de acento. Acción principal de la pantalla. */
+    Filled,
+
+    /** Relleno suave sobre el contenedor del acento. Acción secundaria. */
+    Tonal,
+
+    /** Solo contorno. Acción terciaria o alternativa. */
+    Outlined
+}
+
+/**
+ * El botón ancho de la app: el que cierra un formulario o un paso del alta.
+ *
+ * **Tamaño y forma son los del tamaño «medium» de Material**, que resulta ser exactamente el
+ * que tenía la app antes de migrar: 56dp de alto y esquinas de 28dp. Al adoptar Material se
+ * quedó con el tamaño por defecto —40dp y forma de píldora— y se veía pequeño y demasiado
+ * redondo para lo que es: la acción principal de la pantalla, anclada abajo.
+ *
+ * **La forma cambia al pulsar.** En reposo es una pastilla, redonda del todo, y bajo el dedo
+ * pasa a la forma cuadrada de Material: las esquinas se cierran mientras lo tienes apretado y
+ * vuelven a abrirse al soltar. Es el morphing de Material 3 Expressive, y lo hace el propio
+ * componente a partir de [SemestaButtonDefaults.shapes]; no hay ninguna animación escrita aquí.
+ *
+ * Nota sobre la dirección: Material aprieta las esquinas al pulsar, no las redondea. Si se
+ * quiere al revés —redondear bajo el dedo— basta con intercambiar los dos valores de `shapes`.
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SemestaButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    variant: SemestaButtonVariant = SemestaButtonVariant.Filled,
+    enabled: Boolean = true,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: ImageVector? = null,
+    /**
+     * Color de relleno propio, para secciones con identidad cromática (por ejemplo el rojo de
+     * Gastos). El contenido se calcula sobre él, así que sigue siendo legible.
+     * Si es null se usa el color que corresponda a [variant].
+     */
+    containerColor: Color? = null
+) {
+    /*
+     * Icono y texto van juntos y centrados como un solo bloque.
+     *
+     * Estaban repartidos: el icono pegado al borde y el texto centrado en el hueco que sobraba,
+     * así que con icono el texto quedaba corrido hacia un lado y el icono lejos de él («Crear
+     * 2027-1» se veía descentrado). El texto sigue pudiendo encogerse con puntos suspensivos:
+     * `weight(fill = false)` le deja ocupar solo lo que mide, y recortarse si no cabe.
+     */
+    val content: @Composable () -> Unit = {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+        ) {
+            if (leadingIcon != null) {
+                Icon(leadingIcon, contentDescription = null, modifier = Modifier.size(ButtonDefaults.MediumIconSize))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMediumEmphasized,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            if (trailingIcon != null) {
+                Icon(trailingIcon, contentDescription = null, modifier = Modifier.size(ButtonDefaults.MediumIconSize))
+            }
+        }
+    }
+
+    /*
+     * La forma y el alto salen de Apariencia, no de aqui.
+     *
+     * **Estuvieron escritos a mano en este archivo**, asi que los dos ajustes de «Forma de los
+     * botones» y «Tamano de los botones» se guardaban y no cambiaban un pixel: el boton pedia
+     * siempre `squareShape` y siempre `MediumContainerHeight`. Ahora los dos salen de
+     * [SemestaButtonDefaults], que es quien los lee de las preferencias.
+     */
+    val sized = modifier
+        .fillMaxWidth()
+        .heightIn(min = SemestaButtonDefaults.PrimaryHeight)
+
+    val shapes = SemestaButtonDefaults.shapes
+    val padding = ButtonDefaults.MediumContentPadding
+
+    when {
+        containerColor != null -> Button(
+            onClick = onClick,
+            shapes = shapes,
+            modifier = sized,
+            enabled = enabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = containerColor,
+                contentColor = contentColorOn(containerColor)
+            ),
+            contentPadding = padding
+        ) { content() }
+
+        variant == SemestaButtonVariant.Filled -> Button(
+            onClick = onClick,
+            shapes = shapes,
+            modifier = sized,
+            enabled = enabled,
+            contentPadding = padding
+        ) { content() }
+
+        variant == SemestaButtonVariant.Tonal -> FilledTonalButton(
+            onClick = onClick,
+            shapes = shapes,
+            modifier = sized,
+            enabled = enabled,
+            contentPadding = padding
+        ) { content() }
+
+        else -> OutlinedButton(
+            onClick = onClick,
+            shapes = shapes,
+            modifier = sized,
+            enabled = enabled,
+            contentPadding = padding
+        ) { content() }
+    }
+}

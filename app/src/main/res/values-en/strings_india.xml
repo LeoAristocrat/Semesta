@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="currency_inr">Indian rupee (INR)</string>
+    <string name="india_scale_ten">0–10 points</string>
+    <string name="india_area_school">School education</string>
+    <string name="india_area_vocational">Diploma, ITI and exam preparation</string>
+    <string name="india_area_agriculture">Agriculture and veterinary sciences</string>
+    <string name="india_fees_title">Fees &amp; instalments</string>
+    <string name="india_fees_desc">Plan your tuition, exam, hostel, mess and other fees in ₹. Enter the amounts from your institution.</string>
+    <string name="india_fees_note">This is your personal fee ledger. Payments here are tracked separately from daily expenses; no money is transferred.</string>
+    <string name="india_fees_add">Add a fee</string>
+    <string name="india_fees_empty">No fees planned yet</string>
+    <string name="india_fees_balance">Outstanding: %1$s</string>
+    <string name="india_fees_paid">Paid %1$s of %2$s</string>
+    <string name="india_fees_due">Due %1$s</string>
+    <string name="india_fees_overdue">Overdue</string>
+    <string name="india_fees_settled">Paid in full</string>
+    <string name="india_fees_name">Fee / instalment name</string>
+    <string name="india_fees_amount">Total amount (₹)</string>
+    <string name="india_fees_payment">Amount already paid (₹)</string>
+    <string name="india_fees_date">Due date (DD/MM/YYYY)</string>
+    <string name="india_fees_error">Enter a name, a valid due date and whole rupee amounts. Paid must be between zero and the total.</string>
+    <string name="india_fees_edit">Edit fee or record payment</string>
+    <string name="india_fees_delete">Delete fee</string>
+    <string name="india_fees_delete_desc">Remove this fee and its payment record from your ledger?</string>
+    <string name="india_fees_link">Track fees and instalments</string>
+    <string name="india_attendance_title">Minimum attendance (%)</string>
+    <string name="india_attendance_desc" formatted="false">75% is a starting suggestion. Use your institution’s requirement; this does not certify exam eligibility. Only marked classes are counted.</string>
+    <string name="india_attendance_target">Target: %1$d%% · Attend next %2$d marked classes to recover</string>
+    <string name="india_attendance_buffer">Target: %1$d%% · You can miss %2$d further classes at this threshold</string>
+    <string name="india_attendance_impossible" formatted="false">100% cannot be recovered after a recorded absence</string>
+    <string name="india_attendance_unmarked">Mark your classes to calculate attendance against your target.</string>
+    <string name="india_scale_note">Marks and grade points are different. Enter grade points on the 10-point scale only if your institution awards them; Semesta does not assume a marks-to-CGPA conversion.</string>
+    <string name="india_assessment_desc">Set your institution’s assessment weights: internal assessment, practicals, mid-semester tests and end-semester exams. They must add up to 100%.</string>
+    <string name="india_assessment_preset">Internal %1$d%% · Exam %2$d%%</string>
+    <string name="india_fee_reminders">Fee deadline reminders</string>
+    <string name="india_fee_reminder_body">%1$s remaining · Due %2$s</string>
+    <string name="india_expense_hostel">Hostel / rent</string>
+    <string name="india_expense_coaching">Coaching / exam preparation</string>
+</resources>

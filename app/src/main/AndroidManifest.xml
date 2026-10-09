@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- El progreso de la descarga lo cuenta el aviso de la app; el del gestor del sistema sobra. -->
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+        Alarmas exactas para los recordatorios.
+
+        Sin esto Android agrupa los avisos para ahorrar bateria y con el movil dormido los
+        suelta cada nueve o quince minutos: el aviso que dice «empieza en 10 min» llegaba
+        cuando la clase ya habia empezado.
+
+        Se usa USE_EXACT_ALARM y no SCHEDULE_EXACT_ALARM porque la segunda viene denegada de
+        fabrica en Android 14 y obliga a mandar al usuario a los ajustes del sistema. La
+        primera se concede al instalar, pero Play solo la admite en apps de alarma, reloj o
+        calendario: si Semesta llega algun dia a Play Store, hay que revisar esta linea.
+    -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!--
+        El táctil de los botones. Normalmente vibra el sistema por cuenta de la app y no hace
+        falta declararlo, pero MIUI/HyperOS reemplaza esa ruta por una que llama a `Vibrator`
+        dentro del proceso de la app: sin el permiso, tocar cualquier botón con háptico lanzaba
+        SecurityException y cerraba la app. Reportado el 21 ago 2026 en un Xiaomi con Android 16.
+    -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!--
+        Grabar un audio dentro de una nota, y nada mas.
+
+        Se pide en el momento de tocar el microfono, no al instalar: quien nunca grabe nada
+        no tiene por que conceder nada. La camara no aparece aqui a proposito: las fotos se
+        hacen abriendo la camara del sistema, que devuelve el archivo ya hecho, y declarar
+        CAMERA obligaria ademas a pedir ese permiso para algo que no lo necesita.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!--
+        Sin esto, Android 11 en adelante no deja ni ver si hay una app que entienda «tg://», así
+        que abrir el grupo de soporte fallaba antes de intentarlo. Solo declara lo que la app
+        necesita abrir: Telegram y una página web.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="tg" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <!-- Trabajos: atajos para compartir la invitación con el icono real de cada app -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        <package android:name="org.telegram.messenger" />
+        <package android:name="org.telegram.messenger.web" />
+        <package android:name="org.thunderdog.challegram" />
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".SemestaApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Semesta"
+        android:enableOnBackInvokedCallback="false">
+
+        <!-- WorkManager se inicializa bajo demanda desde SemestaApplication, no con este
+             proveedor: ver el comentario de esa clase. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+        <activity
+            android:name=".MainActivity"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustNothing"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+        <!--
+            La pantalla de «se cerró sola», en su propio proceso.
+
+            `android:process` no es un adorno: cuando esto arranca, el proceso principal está
+            a punto de morir por el fallo que la lanzó. Compartiendo proceso, la actividad se
+            iría con él y el usuario seguiría viendo el diálogo gris de Android. Aparte, el
+            que se cae se cae y esta sigue en pie.
+
+            `excludeFromRecents` y `taskAffinity` vacío para que no quede una segunda tarjeta
+            de Semesta en Recientes después de un fallo.
+        -->
+        <activity
+            android:name=".core.fallos.PantallaDeFalloActivity"
+            android:process=":fallo"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleInstance" />
+        <receiver
+            android:name=".core.notifications.ReminderReceiver"
+            android:exported="false" />
+        <!-- La descarga de una actualización terminó, con la app abierta o no. -->
+        <receiver
+            android:name=".feature_updates.data.UpdateDownloadReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+        <!-- Los botones «Asistí» y «Falta» del aviso: nadie de fuera los dispara. -->
+        <receiver
+            android:name=".core.notifications.AttendanceActionReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".core.notifications.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_provider_paths" />
+        </provider>
+    </application>
+
+</manifest>

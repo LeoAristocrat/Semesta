@@ -1,0 +1,67 @@
+package com.leoaristocrat.semesta.feature_grades.domain
+
+import com.leoaristocrat.semesta.feature_user.domain.GradingCutScheme
+
+data class Subject(
+    val id: String,
+    val name: String,
+    val targetAverage: Double,
+    val grades: List<GradeItem>,
+    val visualType: SubjectVisualType = SubjectVisualType.TEAL,
+    val customColor: Int? = null,
+    val cutScheme: GradingCutScheme = GradingCutScheme.default(),
+    /**
+     * El corte en el que va la materia, **vacío mientras el usuario no lo haya elegido**.
+     *
+     * Antes arrancaba en el primer corte, y la app presentaba esa suposición como un hecho:
+     * marcaba «Corte actual» en una materia recién creada y, si el usuario elegía otro corte,
+     * reclamaba el historial de unos cortes anteriores que nunca dijo haber cursado. No hay
+     * forma de saberlo sin preguntar, así que no se supone. Léelo por [chosenCutId] o
+     * [defaultCutId] según lo que necesites.
+     */
+    val activeCutId: String = "",
+    val historyPromptStatus: PriorHistoryPromptStatus = PriorHistoryPromptStatus.NOT_SHOWN,
+    val unknownCutIds: Set<String> = emptySet(),
+    /**
+     * Los cortes que **el usuario** ha dado por cerrados.
+     *
+     * Repartir el 100 % del peso no cierra nada: eso solo dice que ya no cabe otra nota. El
+     * cierre es una decisión, y por eso se guarda aparte. Da margen a corregir una nota mal
+     * metida antes de fijar el corte, y hace que el sello signifique algo: lo estampa quien
+     * cierra, no una cuenta que llegó a cien.
+     */
+    val closedCutIds: Set<String> = emptySet(),
+    /** El periodo academico al que pertenece, o nulo si es anterior a que existieran. */
+    val termId: String? = null,
+    /**
+     * De qué materia viene esta, cuando se trae para repetirla.
+     *
+     * Es lo que permite decir «repitiendo» sin adivinarlo. La alternativa era buscar por
+     * nombre en los periodos anteriores, y eso se rompe en cuanto alguien renombra la materia
+     * —o acierta de más, si dos asignaturas distintas se llaman igual—. Aquí la etiqueta es un
+     * dato guardado, no una coincidencia de texto, y por eso tampoco se mete en el nombre.
+     *
+     * La copia se crea **vacía**: sin notas y sin el horario del anterior. Repetir es cursarla
+     * otra vez, no arrastrar lo que salió mal.
+     */
+    val repeatedFromSubjectId: String? = null
+) {
+    /** El corte que el usuario eligió, o null si todavía no ha elegido. */
+    val chosenCutId: String?
+        get() = activeCutId.takeIf { id -> cutScheme.cuts.any { it.id == id } }
+
+    /**
+     * Dónde entra lo que se registre ahora: el corte elegido, y mientras no lo haya, el
+     * primero. Para rellenar un formulario vale una suposición; para decirle al usuario en
+     * qué corte va, no.
+     */
+    val defaultCutId: String
+        get() = chosenCutId ?: cutScheme.cuts.firstOrNull()?.id.orEmpty()
+}
+
+enum class PriorHistoryPromptStatus {
+    NOT_SHOWN,
+    SNOOZED,
+    DISMISSED,
+    COMPLETED
+}

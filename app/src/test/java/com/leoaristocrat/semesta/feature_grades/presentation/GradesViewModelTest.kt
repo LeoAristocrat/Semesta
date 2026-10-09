@@ -1,0 +1,489 @@
+package com.leoaristocrat.semesta.feature_grades.presentation
+
+import com.leoaristocrat.semesta.TextosDePrueba
+import com.leoaristocrat.semesta.core.MainDispatcherRule
+import com.leoaristocrat.semesta.feature_grades.data.InMemoryGradesRepository
+import com.leoaristocrat.semesta.feature_grades.domain.GradeSource
+import com.leoaristocrat.semesta.feature_grades.domain.GradeWeightStatus
+import com.leoaristocrat.semesta.feature_grades.domain.PriorHistoryPromptStatus
+import com.leoaristocrat.semesta.feature_grades.domain.SubjectVisualType
+import com.leoaristocrat.semesta.feature_schedule.domain.AgendaEvent
+import com.leoaristocrat.semesta.feature_schedule.domain.ClassOccurrence
+import com.leoaristocrat.semesta.feature_schedule.domain.ClassSession
+import com.leoaristocrat.semesta.feature_schedule.domain.ScheduleRepository
+import com.leoaristocrat.semesta.feature_tasks.data.InMemoryTasksRepository
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskDifficulty
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskGradingStatus
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskType
+import com.leoaristocrat.semesta.feature_templates.domain.AcademicWork
+import com.leoaristocrat.semesta.feature_templates.domain.AcademicWorkStatus
+import com.leoaristocrat.semesta.feature_templates.domain.AcademicWorksRepository
+import com.leoaristocrat.semesta.feature_terms.domain.AcademicTerm
+import com.leoaristocrat.semesta.feature_terms.domain.AcademicTermRepository
+import com.leoaristocrat.semesta.feature_terms.domain.AcademicTermType
+import com.leoaristocrat.semesta.feature_schedule.domain.SubjectScheduleDraft
+import java.time.LocalDate
+import com.leoaristocrat.semesta.feature_user.data.InMemoryUserRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+
+class GradesViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    private lateinit var gradesRepo: InMemoryGradesRepository
+    private lateinit var userRepo: InMemoryUserRepository
+    private lateinit var tasksRepo: InMemoryTasksRepository
+    private lateinit var scheduleRepo: FakeScheduleRepository
+    private lateinit var worksRepo: FakeAcademicWorksRepository
+    private lateinit var viewModel: GradesViewModel
+
+    @Before
+    fun setUp() {
+        // Sin esto, la clase dependía de que otra prueba hubiera instalado el proveedor antes:
+        // `Textos` es global al proceso, así que funcionaba o no según el orden de ejecución.
+        TextosDePrueba.instalar()
+        gradesRepo = InMemoryGradesRepository()
+        userRepo = InMemoryUserRepository()
+        tasksRepo = InMemoryTasksRepository()
+        scheduleRepo = FakeScheduleRepository()
+        worksRepo = FakeAcademicWorksRepository()
+        viewModel = GradesViewModel(
+            repository = gradesRepo,
+            userRepository = userRepo,
+            tasksRepository = tasksRepo,
+            scheduleRepository = scheduleRepo,
+            academicWorksRepository = worksRepo,
+            termRepository = FakeTermRepositoryParaMaterias()
+        )
+    }
+
+    @Test
+    fun `una materia nueva no trae corte elegido`() {
+        val subject = viewModel.addSubject("Cálculo", 4.0, SubjectVisualType.TEAL)!!
+
+        assertNull("nadie ha dicho todavía en qué corte va", subject.chosenCutId)
+        assertEquals("pero hay dónde escribir si hace falta", "period-1", subject.defaultCutId)
+    }
+
+    @Test
+    fun `completar un corte pasa el destino de las notas al siguiente`() {
+        val subject = viewModel.addSubject("Física", 4.0, SubjectVisualType.TEAL)!!
+
+        // Media del corte 1: la mitad del peso.
+        viewModel.saveGrade(
+            subjectId = subject.id,
+            name = "Parcial",
+            value = 4.0,
+            percentageInput = 50.0,
+            cutId = "period-1"
+        )
+        assertEquals(
+            "con el corte a medias se queda donde está",
+            "period-1",
+            viewModel.subjectById(subject.id)!!.chosenCutId
+        )
+
+        // La otra mitad lo cierra.
+        viewModel.saveGrade(
+            subjectId = subject.id,
+            name = "Final",
+            value = 4.0,
+            percentageInput = 50.0,
+            cutId = "period-1"
+        )
+        assertEquals(
+            "cerrado el corte 1, lo nuevo entra en el 2",
+            "period-2",
+            viewModel.subjectById(subject.id)!!.chosenCutId
+        )
+    }
+
+    @Test
+    fun `el ultimo corte completo no salta a ninguna parte`() {
+        val subject = viewModel.addSubject("Historia", 4.0, SubjectVisualType.TEAL)!!
+
+        viewModel.saveGrade(
+            subjectId = subject.id,
+            name = "Final",
+            value = 4.0,
+            percentageInput = 100.0,
+            cutId = "period-3"
+        )
+
+        assertEquals(
+            "no hay corte posterior al que pasar",
+            "period-3",
+            viewModel.subjectById(subject.id)!!.chosenCutId
+        )
+    }
+
+    @Test
+    fun `addSubject con nombre valido crea la materia`() {
+        val subject = viewModel.addSubject(
+            name = "Cálculo",
+            targetAverage = 4.0,
+            visualType = SubjectVisualType.TEAL
+        )
+
+        assertNotNull(subject)
+        assertEquals("Cálculo", subject!!.name)
+        assertEquals(1, viewModel.subjects.value.size)
+    }
+
+    @Test
+    fun `addSubject con nombre vacío retorna null`() {
+        val subject = viewModel.addSubject(
+            name = "",
+            targetAverage = 4.0,
+            visualType = SubjectVisualType.TEAL
+        )
+
+        assertNull(subject)
+        assertTrue(viewModel.subjects.value.isEmpty())
+    }
+
+    @Test
+    fun `addSubject con nombre de un carácter retorna null`() {
+        val subject = viewModel.addSubject(
+            name = "A",
+            targetAverage = 4.0,
+            visualType = SubjectVisualType.TEAL
+        )
+
+        assertNull(subject)
+    }
+
+    @Test
+    fun `addSubject con targetAverage negativo retorna null`() {
+        val subject = viewModel.addSubject(
+            name = "Física",
+            targetAverage = -1.0,
+            visualType = SubjectVisualType.BLUE
+        )
+
+        assertNull(subject)
+    }
+
+    @Test
+    fun `addGrade con datos válidos retorna true y guarda la nota`() {
+        val subject = viewModel.addSubject("Álgebra", 4.0, SubjectVisualType.TEAL)!!
+
+        val saved = viewModel.addGrade(
+            subjectId = subject.id,
+            name = "Parcial 1",
+            value = 4.2,
+            percentageInput = 30.0,
+            cutId = subject.activeCutId
+        )
+
+        assertTrue(saved)
+        val updated = viewModel.subjects.value.first { it.id == subject.id }
+        assertEquals(1, updated.grades.size)
+        assertEquals(4.2, updated.grades.first().value, 0.001)
+    }
+
+    @Test
+    fun `addGrade con valor fuera del rango retorna false`() {
+        val subject = viewModel.addSubject("Química", 4.0, SubjectVisualType.CORAL)!!
+
+        val saved = viewModel.addGrade(
+            subjectId = subject.id,
+            name = "Examen",
+            value = 6.0,
+            percentageInput = 30.0,
+            cutId = subject.activeCutId
+        )
+
+        assertFalse(saved)
+        val updated = viewModel.subjects.value.first { it.id == subject.id }
+        assertTrue(updated.grades.isEmpty())
+    }
+
+    @Test
+    fun `addGrade no permite exceder 100 porciento de peso acumulado`() {
+        val subject = viewModel.addSubject("Derecho", 4.0, SubjectVisualType.TEAL)!!
+
+        viewModel.addGrade(
+            subjectId = subject.id,
+            name = "Parcial 1",
+            value = 3.5,
+            percentageInput = 70.0,
+            cutId = subject.activeCutId
+        )
+        val secondSaved = viewModel.addGrade(
+            subjectId = subject.id,
+            name = "Parcial 2",
+            value = 4.0,
+            percentageInput = 50.0,
+            cutId = subject.activeCutId
+        )
+
+        assertFalse(secondSaved)
+        val updated = viewModel.subjects.value.first { it.id == subject.id }
+        assertEquals(1, updated.grades.size)
+    }
+
+    @Test
+    fun `deleteSubject elimina la materia y desvincula tareas relacionadas`() {
+        val subject = viewModel.addSubject("Historia", 3.5, SubjectVisualType.TEAL)!!
+        val now = System.currentTimeMillis()
+        tasksRepo.addTask(
+            com.leoaristocrat.semesta.feature_tasks.domain.StudentTask(
+                id = "task-1",
+                title = "Ensayo",
+                description = "",
+                subjectId = subject.id,
+                type = TaskType.ESSAY,
+                dueDateMillis = now + 86_400_000,
+                difficulty = TaskDifficulty.MEDIUM,
+                estimatedMinutes = 90,
+                completed = false,
+                createdAt = now,
+                updatedAt = now,
+                gradingStatus = TaskGradingStatus.UNDECIDED
+            )
+        )
+
+        val deleted = viewModel.deleteSubject(subject.id)
+
+        assertTrue(deleted)
+        assertTrue(viewModel.subjects.value.none { it.id == subject.id })
+        val task = tasksRepo.tasks.value.first { it.id == "task-1" }
+        assertNull(task.subjectId)
+    }
+
+    @Test
+    fun `deleteSubject retorna false para id inexistente`() {
+        val deleted = viewModel.deleteSubject("no-existe")
+
+        assertFalse(deleted)
+    }
+
+    @Test
+    fun `updateSubject actualiza el nombre correctamente`() {
+        val subject = viewModel.addSubject("Matemáticas", 4.0, SubjectVisualType.TEAL)!!
+
+        val updated = viewModel.updateSubject(
+            subjectId = subject.id,
+            name = "Matemáticas Avanzadas",
+            targetAverage = 4.5,
+            visualType = SubjectVisualType.PURPLE
+        )
+
+        assertTrue(updated)
+        val stored = viewModel.subjects.value.first { it.id == subject.id }
+        assertEquals("Matemáticas Avanzadas", stored.name)
+        assertEquals(4.5, stored.targetAverage, 0.001)
+    }
+
+    @Test
+    fun `setActiveCut cambia el período activo`() {
+        val subject = viewModel.addSubject("Inglés", 4.0, SubjectVisualType.TEAL)!!
+        val secondCut = subject.cutScheme.cuts.getOrNull(1)
+
+        if (secondCut != null) {
+            val result = viewModel.setActiveCut(subject.id, secondCut.id)
+            assertTrue(result)
+            val stored = viewModel.subjects.value.first { it.id == subject.id }
+            assertEquals(secondCut.id, stored.activeCutId)
+        }
+    }
+
+    @Test
+    fun `saveGrade sugiere historial cuando se agrega nota en período no inicial`() {
+        val subject = viewModel.addSubject("Economía", 4.0, SubjectVisualType.TEAL)!!
+        val cuts = subject.cutScheme.cuts
+        if (cuts.size < 2) return
+
+        // Set active cut to the last cut so history suggestion triggers
+        val laterCut = cuts.maxByOrNull { it.order }!!
+        viewModel.setActiveCut(subject.id, laterCut.id)
+
+        // Save grade in second cut (order=2 > 1) while grades are still empty
+        val secondCut = cuts.sortedBy { it.order }[1]
+        val outcome = viewModel.saveGrade(
+            subjectId = subject.id,
+            name = "Parcial histórico",
+            value = 3.5,
+            percentageInput = 100.0,
+            cutId = secondCut.id,
+            source = GradeSource.ACTIVITY,
+            weightStatus = GradeWeightStatus.KNOWN
+        )
+
+        assertTrue(outcome.saved)
+        assertTrue(outcome.suggestPriorHistory)
+    }
+
+    @Test
+    fun `updateHistoryPromptStatus actualiza el estado del banner`() {
+        val subject = viewModel.addSubject("Biología", 4.0, SubjectVisualType.TEAL)!!
+
+        val result = viewModel.updateHistoryPromptStatus(subject.id, PriorHistoryPromptStatus.SNOOZED)
+
+        assertTrue(result)
+        val stored = viewModel.subjects.value.first { it.id == subject.id }
+        assertEquals(PriorHistoryPromptStatus.SNOOZED, stored.historyPromptStatus)
+    }
+    private fun franja(dias: Set<Int>, desde: Int, hasta: Int) = SubjectScheduleDraft(
+        enabled = true,
+        daysOfWeek = dias,
+        startMinute = desde,
+        endMinute = hasta,
+        recurrenceStartEpochDay = LocalDate.now().toEpochDay()
+    )
+
+    @Test
+    fun `una materia puede tener dos franjas a horas distintas`() {
+        val materia = viewModel.addSubject("Cálculo III", 4.0, SubjectVisualType.BLUE)!!
+
+        val guardado = viewModel.saveSubjectSchedule(
+            subjectId = materia.id,
+            drafts = listOf(
+                franja(setOf(1), 8 * 60, 10 * 60),
+                franja(setOf(3), 14 * 60, 16 * 60)
+            )
+        )
+
+        assertTrue(guardado)
+        val suyas = scheduleRepo.sessions.value.filter { it.subjectId == materia.id }
+        assertEquals(2, suyas.size)
+        assertEquals(setOf(8 * 60, 14 * 60), suyas.map { it.startMinute }.toSet())
+    }
+
+    @Test
+    fun `editar el horario conserva el id de las franjas que siguen`() {
+        val materia = viewModel.addSubject("Física II", 4.0, SubjectVisualType.PURPLE)!!
+        viewModel.saveSubjectSchedule(
+            materia.id,
+            listOf(franja(setOf(1), 8 * 60, 10 * 60), franja(setOf(3), 14 * 60, 16 * 60))
+        )
+        val idsAntes = scheduleRepo.sessions.value.filter { it.subjectId == materia.id }.map { it.id }
+
+        viewModel.saveSubjectSchedule(
+            materia.id,
+            listOf(franja(setOf(1), 9 * 60, 11 * 60), franja(setOf(3), 14 * 60, 16 * 60))
+        )
+
+        val idsDespues = scheduleRepo.sessions.value.filter { it.subjectId == materia.id }.map { it.id }
+        // Si cambiaran de id, la asistencia ya registrada quedaria colgando de una clase que
+        // dejo de existir.
+        assertEquals(idsAntes, idsDespues)
+    }
+
+    @Test
+    fun `quitar una franja borra solo la que sobra`() {
+        val materia = viewModel.addSubject("Sociología", 4.0, SubjectVisualType.YELLOW)!!
+        viewModel.saveSubjectSchedule(
+            materia.id,
+            listOf(franja(setOf(1), 8 * 60, 10 * 60), franja(setOf(3), 14 * 60, 16 * 60))
+        )
+
+        viewModel.saveSubjectSchedule(materia.id, listOf(franja(setOf(1), 8 * 60, 10 * 60)))
+
+        val suyas = scheduleRepo.sessions.value.filter { it.subjectId == materia.id }
+        assertEquals(1, suyas.size)
+        assertEquals(8 * 60, suyas.first().startMinute)
+    }
+
+    @Test
+    fun `una materia con el mismo nombre se reconoce sin acentos ni mayusculas`() {
+        viewModel.addSubject("Cálculo III", 4.0, SubjectVisualType.BLUE)
+
+        assertNotNull(viewModel.subjectWithSameName("calculo iii"))
+        assertNull(viewModel.subjectWithSameName("Álgebra"))
+    }
+
+    @Test
+    fun `la materia que se edita no se detecta a si misma como repetida`() {
+        val materia = viewModel.addSubject("Programación", 4.0, SubjectVisualType.GREEN)!!
+
+        assertNull(viewModel.subjectWithSameName("Programación", excludingId = materia.id))
+    }
+}
+
+private class FakeScheduleRepository : ScheduleRepository {
+    private val _sessions = MutableStateFlow<List<ClassSession>>(emptyList())
+    private val _occurrences = MutableStateFlow<List<ClassOccurrence>>(emptyList())
+    private val _agendaEvents = MutableStateFlow<List<AgendaEvent>>(emptyList())
+
+    override val sessions: StateFlow<List<ClassSession>> = _sessions.asStateFlow()
+    override val occurrences: StateFlow<List<ClassOccurrence>> = _occurrences.asStateFlow()
+    override val agendaEvents: StateFlow<List<AgendaEvent>> = _agendaEvents.asStateFlow()
+
+    override fun saveSession(session: ClassSession) {
+        _sessions.value = _sessions.value.filterNot { it.id == session.id } + session
+    }
+
+    override fun deleteSession(sessionId: String) {
+        _sessions.value = _sessions.value.filterNot { it.id == sessionId }
+    }
+
+    override fun saveOccurrence(occurrence: ClassOccurrence) {
+        _occurrences.value = _occurrences.value.filterNot { it.id == occurrence.id } + occurrence
+    }
+
+    override fun deleteOccurrence(occurrenceId: String) {
+        _occurrences.value = _occurrences.value.filterNot { it.id == occurrenceId }
+    }
+
+    override fun saveAgendaEvent(event: AgendaEvent) {
+        _agendaEvents.value = _agendaEvents.value.filterNot { it.id == event.id } + event
+    }
+
+    override fun deleteAgendaEvent(eventId: String) {
+        _agendaEvents.value = _agendaEvents.value.filterNot { it.id == eventId }
+    }
+}
+
+private class FakeAcademicWorksRepository : AcademicWorksRepository {
+    private val _works = MutableStateFlow<List<AcademicWork>>(emptyList())
+    override val works: StateFlow<List<AcademicWork>> = _works.asStateFlow()
+
+    override fun addWork(work: AcademicWork) {
+        _works.value = _works.value + work
+    }
+
+    override fun updateWork(work: AcademicWork) {
+        _works.value = _works.value.map { if (it.id == work.id) work else it }
+    }
+
+    override fun deleteWork(workId: String) {
+        _works.value = _works.value.filterNot { it.id == workId }
+    }
+
+    override fun setChecklistItem(workId: String, checklistItemId: String, completed: Boolean) {}
+
+    override fun setStatus(workId: String, status: AcademicWorkStatus) {
+        _works.value = _works.value.map { work ->
+            if (work.id == workId) work.copy(status = status) else work
+        }
+    }
+}
+
+/** Sin periodo activo: para estas pruebas, la comparación de nombres no se acota por periodo. */
+private class FakeTermRepositoryParaMaterias : AcademicTermRepository {
+    override val terms: StateFlow<List<AcademicTerm>> = MutableStateFlow(emptyList())
+    override val activeTerm: StateFlow<AcademicTerm?> = MutableStateFlow(null)
+    override suspend fun create(
+        name: String,
+        type: AcademicTermType,
+        start: LocalDate,
+        plannedEnd: LocalDate?
+    ): Result<AcademicTerm> = Result.failure(UnsupportedOperationException())
+    override suspend fun update(term: AcademicTerm): Result<Unit> = Result.success(Unit)
+    override suspend fun close(termId: String, closedOn: LocalDate, cutScheme: com.leoaristocrat.semesta.feature_user.domain.GradingCutScheme?): Result<Unit> = Result.success(Unit)
+    override suspend fun reopen(termId: String): Result<Unit> = Result.success(Unit)
+    override suspend fun delete(termId: String): Result<Unit> = Result.success(Unit)
+}

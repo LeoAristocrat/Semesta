@@ -1,0 +1,610 @@
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class
+)
+
+package com.leoaristocrat.semesta.feature_schedule.presentation
+
+import androidx.compose.ui.res.stringResource
+import com.leoaristocrat.semesta.R
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.LocalOverscrollFactory
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Assignment
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Alarm
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Event
+import androidx.compose.material.icons.rounded.PresentToAll
+import androidx.compose.material.icons.rounded.Quiz
+import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.style.TextAlign
+import com.leoaristocrat.semesta.core.design.theme.SectionLabelStyle
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
+import com.leoaristocrat.semesta.core.design.components.SemestaSwitch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.leoaristocrat.semesta.core.design.components.SemestaCard
+import com.leoaristocrat.semesta.feature_grades.domain.Subject
+import com.leoaristocrat.semesta.feature_schedule.domain.AgendaEvent
+import com.leoaristocrat.semesta.feature_schedule.domain.AgendaEventKind
+import com.leoaristocrat.semesta.feature_schedule.domain.AgendaRecurrence
+import com.leoaristocrat.semesta.feature_tasks.domain.TaskType
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import com.leoaristocrat.semesta.core.design.components.SemestaButtonDefaults
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+
+internal enum class AgendaCreateKind(
+    val titleRes: Int,
+    val subtitleRes: Int,
+    val icon: ImageVector,
+    val academic: Boolean
+) {
+    TASK(R.string.agenda_type_task_title, R.string.agenda_type_task_desc, Icons.AutoMirrored.Rounded.Assignment, true),
+    EVALUATION(R.string.agenda_type_eval_title, R.string.agenda_type_eval_desc, Icons.Rounded.Quiz, true),
+    PRESENTATION(R.string.agenda_type_pres_title, R.string.agenda_type_pres_desc, Icons.Rounded.PresentToAll, true),
+    PERSONAL(R.string.agenda_type_personal_title, R.string.agenda_type_personal_desc, Icons.Rounded.Event, false),
+    REMINDER(R.string.agenda_type_reminder_title, R.string.agenda_type_reminder_desc, Icons.Rounded.Alarm, false),
+    CUSTOM(R.string.agenda_type_custom_title, R.string.agenda_type_custom_desc, Icons.Rounded.Tune, false);
+
+    val title: String
+        @Composable get() = stringResource(titleRes)
+    val subtitle: String
+        @Composable get() = stringResource(subtitleRes)
+}
+
+@Composable
+internal fun AgendaCreateMenuSheet(
+    onDismiss: () -> Unit,
+    onSelect: (AgendaCreateKind) -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        // El fondo de la app, como el resto de hojas: sobre el tono de tarjeta, las tarjetas de
+        // dentro —tipos, fecha, interruptor— quedaban del mismo color que la hoja.
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(top = 4.dp, bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            AgendaSheetHeader(
+                icon = Icons.Rounded.CalendarMonth,
+                title = stringResource(R.string.agenda_sheet_title),
+                subtitle = stringResource(R.string.agenda_sheet_subtitle)
+            )
+
+            AgendaSectionLabel(stringResource(R.string.agenda_section_academic))
+            listOf(
+                AgendaCreateKind.TASK,
+                AgendaCreateKind.EVALUATION,
+                AgendaCreateKind.PRESENTATION
+            ).forEach { kind ->
+                AgendaKindRow(kind = kind, onClick = { onSelect(kind) })
+            }
+
+            AgendaSectionLabel(stringResource(R.string.agenda_section_personal))
+            listOf(
+                AgendaCreateKind.PERSONAL,
+                AgendaCreateKind.REMINDER,
+                AgendaCreateKind.CUSTOM
+            ).forEach { kind ->
+                AgendaKindRow(kind = kind, onClick = { onSelect(kind) })
+            }
+        }
+    }
+}
+
+/** La cabecera común de los sheets de agenda: el icono en su cuadrado, qué es y para qué. */
+@Composable
+private fun AgendaSheetHeader(
+    icon: ImageVector,
+    title: String,
+    subtitle: String
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(
+                title,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Text(
+                subtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
+/** El rótulo de un grupo: versales pequeñas del color del acento, como en el resto de sheets. */
+@Composable
+private fun AgendaSectionLabel(text: String) {
+    Text(
+        text = text,
+        color = MaterialTheme.colorScheme.primary,
+        style = SectionLabelStyle,
+        modifier = Modifier.padding(top = 6.dp, start = 4.dp)
+    )
+}
+
+@Composable
+private fun AgendaKindRow(
+    kind: AgendaCreateKind,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    SemestaCard(
+        modifier = modifier.fillMaxWidth(),
+        tonalElevation = 0.dp,
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(kind.icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
+            }
+            Spacer(Modifier.width(11.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    kind.title,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    kind.subtitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+/**
+ * La fila de chips: rueda en horizontal y no estira el borde.
+ *
+ * El estirado llegaba con un segundo de retraso, con la fila ya quieta. No era un retraso de
+ * la animación: al lanzar la fila, el desplazamiento llega al tope enseguida y ahí se para a
+ * la vista, pero la animación de inercia sigue viva decayendo, y Compose no le entrega la
+ * velocidad sobrante al borde hasta que esa animación termina. De ahí el segundo largo entre
+ * el final del recorrido y el estirón.
+ *
+ * Sin efecto de borde no hay nada que llegue tarde: la fila se para en el tope y ya. Se quita
+ * aquí y no en toda la app porque en una lista vertical el estirado sí cae a tiempo y es la
+ * señal de «se acabó» que Android usa en todas partes.
+ */
+@Composable
+private fun AgendaChipRow(content: @Composable RowScope.() -> Unit) {
+    CompositionLocalProvider(LocalOverscrollFactory provides null) {
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            content = content
+        )
+    }
+}
+
+@Composable
+internal fun AgendaComposerSheet(
+    kind: AgendaCreateKind,
+    initialDate: LocalDate,
+    subjects: List<Subject>,
+    existingEvent: AgendaEvent? = null,
+    onDismiss: () -> Unit,
+    onSaveAcademic: (String, String, String?, TaskType, LocalDate, Int?, Boolean) -> Boolean,
+    onSaveEvent: (AgendaEvent?, String, String, AgendaEventKind, LocalDate, Int?, Int?, String, Int, AgendaRecurrence) -> Boolean,
+    onDeleteEvent: ((String) -> Unit)? = null
+) {
+    val existingDate = existingEvent?.let { Instant.ofEpochMilli(it.startMillis).atZone(ZoneId.systemDefault()).toLocalDate() }
+    var title by rememberSaveable(existingEvent?.id) { mutableStateOf(existingEvent?.title.orEmpty()) }
+    var notes by rememberSaveable(existingEvent?.id) { mutableStateOf(existingEvent?.notes.orEmpty()) }
+    var dateEpochDay by rememberSaveable(existingEvent?.id) { mutableStateOf((existingDate ?: initialDate).toEpochDay()) }
+    var startText by rememberSaveable(existingEvent?.id) {
+        mutableStateOf(existingEvent?.takeUnless(AgendaEvent::allDay)?.startMillis?.let(::agendaTimeText).orEmpty())
+    }
+    var endText by rememberSaveable(existingEvent?.id) { mutableStateOf(existingEvent?.endMillis?.let(::agendaTimeText).orEmpty()) }
+    var location by rememberSaveable(existingEvent?.id) { mutableStateOf(existingEvent?.location.orEmpty()) }
+    var selectedSubjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedTaskType by rememberSaveable { mutableStateOf(defaultTaskType(kind)) }
+    var generatesGrade by rememberSaveable { mutableStateOf(kind == AgendaCreateKind.EVALUATION) }
+    var reminder by rememberSaveable(existingEvent?.id) { mutableStateOf(existingEvent?.reminderMinutes ?: 15) }
+    var recurrence by rememberSaveable(existingEvent?.id) { mutableStateOf(existingEvent?.recurrence ?: AgendaRecurrence.NONE) }
+    var error by rememberSaveable { mutableStateOf<String?>(null) }
+    val date = LocalDate.ofEpochDay(dateEpochDay)
+    val academic = kind.academic
+    // Los pasos de fecha y los chips se tragan el toque, así que el campo que estuviera
+    // escrito se quedaba enfocado y el teclado tapaba media hoja mientras se elegía.
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    val releaseFocus = {
+        focusManager.clearFocus()
+        keyboard?.hide()
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        // El fondo de la app, como el resto de hojas: sobre el tono de tarjeta, las tarjetas de
+        // dentro —tipos, fecha, interruptor— quedaban del mismo color que la hoja.
+        containerColor = MaterialTheme.colorScheme.background,
+        shape = MaterialTheme.shapes.extraLarge
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AgendaSheetHeader(
+                icon = kind.icon,
+                title = if (existingEvent == null) kind.title else stringResource(R.string.agenda_edit_event),
+                subtitle = if (academic) stringResource(R.string.agenda_academic_hint) else stringResource(R.string.agenda_personal_hint)
+            )
+
+            OutlinedTextField(
+                title,
+                { title = it.take(100) },
+                Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.agenda_field_title)) },
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
+            )
+
+            // La fecha, en su propia tarjeta. Suelta sobre el fondo, las dos flechas y el texto
+            // no se leían como un mismo control sino como tres cosas puestas en fila.
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainer
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilledTonalIconButton(
+                        onClick = { releaseFocus(); dateEpochDay-- },
+                        modifier = Modifier.size(IconButtonDefaults.smallContainerSize()),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, stringResource(R.string.agenda_prev_day), modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        date.format(DateTimeFormatter.ofPattern(if (AgendaLocale.language == "en") "EEEE, MMMM d" else "EEEE, d 'de' MMMM", AgendaLocale)).replaceFirstChar(Char::uppercase),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    FilledTonalIconButton(
+                        onClick = { releaseFocus(); dateEpochDay++ },
+                        modifier = Modifier.size(IconButtonDefaults.smallContainerSize()),
+                        colors = IconButtonDefaults.filledTonalIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.agenda_next_day), modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    startText,
+                    { startText = it.take(5) },
+                    Modifier.weight(1f),
+                    label = { Text(if (academic) stringResource(R.string.agenda_due_time) else stringResource(R.string.agenda_start_time)) },
+                    placeholder = { Text("08:00") },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
+                )
+                if (!academic) {
+                    OutlinedTextField(
+                        endText,
+                        { endText = it.take(5) },
+                        Modifier.weight(1f),
+                        label = { Text(stringResource(R.string.agenda_end_time)) },
+                        placeholder = { Text("09:00") },
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+            }
+
+            if (academic) {
+                AgendaSectionLabel(stringResource(R.string.agenda_section_academic_type))
+                AgendaChipRow {
+                    taskTypesFor(kind).forEach { type ->
+                        FilterChip(
+                            selectedTaskType == type,
+                            { releaseFocus(); selectedTaskType = type },
+                            label = { Text(type.agendaLabel(), maxLines = 1, softWrap = false) }
+                        )
+                    }
+                }
+
+                AgendaSectionLabel(stringResource(R.string.agenda_section_subject_optional))
+                AgendaChipRow {
+                    FilterChip(
+                        selectedSubjectId == null,
+                        { releaseFocus(); selectedSubjectId = null },
+                        label = { Text(stringResource(R.string.agenda_no_subject), maxLines = 1, softWrap = false) }
+                    )
+                    subjects.forEach { subject ->
+                        FilterChip(
+                            selectedSubjectId == subject.id,
+                            { releaseFocus(); selectedSubjectId = subject.id },
+                            label = { Text(subject.name, maxLines = 1, softWrap = false) }
+                        )
+                    }
+                }
+
+                // El interruptor va dentro de una tarjeta: es un ajuste, y suelto entre
+                // rótulos parecía un párrafo con un mando al lado.
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainer
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                stringResource(R.string.agenda_generates_grade),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                stringResource(R.string.agenda_generates_grade_desc),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        SemestaSwitch(generatesGrade, { releaseFocus(); generatesGrade = it })
+                    }
+                }
+            } else {
+                OutlinedTextField(
+                    location,
+                    { location = it.take(80) },
+                    Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.agenda_location_optional)) },
+                    singleLine = true,
+                    shape = MaterialTheme.shapes.medium
+                )
+
+                AgendaSectionLabel(stringResource(R.string.agenda_section_repetition))
+                AgendaChipRow {
+                    AgendaRecurrence.entries.forEach { option ->
+                        FilterChip(
+                            recurrence == option,
+                            { releaseFocus(); recurrence = option },
+                            label = { Text(option.agendaLabel(), maxLines = 1, softWrap = false) }
+                        )
+                    }
+                }
+
+                AgendaSectionLabel(stringResource(R.string.agenda_section_reminder))
+                AgendaChipRow {
+                    listOf(0, 5, 15, 30, 60, 1440).forEach { minutes ->
+                        FilterChip(
+                            reminder == minutes,
+                            { releaseFocus(); reminder = minutes },
+                            label = { Text(minutes.reminderLabel(), maxLines = 1, softWrap = false) }
+                        )
+                    }
+                }
+            }
+
+            OutlinedTextField(
+                notes,
+                { notes = it.take(500) },
+                Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.agenda_notes_optional)) },
+                minLines = 2,
+                shape = MaterialTheme.shapes.medium
+            )
+            error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+
+            val validationError = stringResource(R.string.agenda_validation_warning)
+            // Guardar ocupa el ancho, como el botón principal de cualquier otra pantalla.
+            // Estaba en una esquina, del tamaño de un botón secundario, siendo la única cosa
+            // que había que hacer en toda la hoja.
+            Button(
+                shapes = SemestaButtonDefaults.shapes,
+                onClick = {
+                    releaseFocus()
+                    val start = parseAgendaMinute(startText)
+                    val end = parseAgendaMinute(endText)
+                    val saved = if (academic) {
+                        onSaveAcademic(title, notes, selectedSubjectId, selectedTaskType, date, start, generatesGrade)
+                    } else {
+                        onSaveEvent(existingEvent, title, notes, kind.toEventKind(), date, start, end, location, reminder, recurrence)
+                    }
+                    if (saved) onDismiss() else error = validationError
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = SemestaButtonDefaults.PrimaryHeight),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                Icon(Icons.Rounded.Save, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(9.dp))
+                Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold)
+            }
+            if (existingEvent != null && onDeleteEvent != null) {
+                TextButton(
+                    onClick = { onDeleteEvent(existingEvent.id); onDismiss() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(R.string.agenda_delete_event),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+private val AgendaLocale: Locale get() = Locale.getDefault()
+
+private fun defaultTaskType(kind: AgendaCreateKind) = when (kind) {
+    AgendaCreateKind.EVALUATION -> TaskType.EXAM
+    AgendaCreateKind.PRESENTATION -> TaskType.PRESENTATION
+    else -> TaskType.WORKSHOP
+}
+
+private fun taskTypesFor(kind: AgendaCreateKind) = when (kind) {
+    AgendaCreateKind.EVALUATION -> listOf(TaskType.TEST, TaskType.EXAM)
+    AgendaCreateKind.PRESENTATION -> listOf(TaskType.PRESENTATION)
+    else -> listOf(TaskType.WORKSHOP, TaskType.PROJECT, TaskType.READING, TaskType.PRACTICE, TaskType.ESSAY, TaskType.RESEARCH, TaskType.OTHER)
+}
+
+@Composable
+private fun TaskType.agendaLabel() = when (this) {
+    TaskType.WORKSHOP -> stringResource(R.string.agenda_academic_type_workshop)
+    TaskType.EXAM -> stringResource(R.string.agenda_academic_type_midterm)
+    TaskType.TEST -> stringResource(R.string.agenda_academic_type_quiz)
+    TaskType.PRESENTATION -> stringResource(R.string.agenda_academic_type_presentation)
+    TaskType.PROJECT -> stringResource(R.string.agenda_academic_type_project)
+    TaskType.READING -> stringResource(R.string.agenda_academic_type_reading)
+    TaskType.PRACTICE -> stringResource(R.string.agenda_academic_type_lab)
+    TaskType.ESSAY -> stringResource(R.string.agenda_academic_type_essay)
+    TaskType.RESEARCH -> stringResource(R.string.agenda_academic_type_research)
+    TaskType.OTHER -> stringResource(R.string.agenda_academic_type_other)
+}
+
+private fun AgendaCreateKind.toEventKind() = when (this) {
+    AgendaCreateKind.PERSONAL -> AgendaEventKind.PERSONAL
+    AgendaCreateKind.REMINDER -> AgendaEventKind.REMINDER
+    else -> AgendaEventKind.CUSTOM
+}
+
+@Composable
+private fun AgendaRecurrence.agendaLabel() = when (this) {
+    AgendaRecurrence.NONE -> stringResource(R.string.agenda_repeat_none)
+    AgendaRecurrence.DAILY -> stringResource(R.string.agenda_repeat_daily)
+    AgendaRecurrence.WEEKLY -> stringResource(R.string.agenda_repeat_weekly)
+    AgendaRecurrence.MONTHLY -> stringResource(R.string.agenda_repeat_monthly)
+}
+
+@Composable
+private fun Int.reminderLabel() = when (this) {
+    0 -> stringResource(R.string.agenda_reminder_none)
+    1440 -> stringResource(R.string.agenda_reminder_1_day)
+    else -> stringResource(R.string.agenda_reminder_min_before, this)
+}
+
+private fun parseAgendaMinute(value: String): Int? {
+    if (value.isBlank()) return null
+    val parts = value.trim().split(':')
+    if (parts.size != 2) return null
+    val hour = parts[0].toIntOrNull() ?: return null
+    val minute = parts[1].toIntOrNull() ?: return null
+    if (hour !in 0..23 || minute !in 0..59) return null
+    return hour * 60 + minute
+}
+
+private fun agendaTimeText(millis: Long): String {
+    val time = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalTime()
+    return "%02d:%02d".format(time.hour, time.minute)
+}
