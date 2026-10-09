@@ -1,5 +1,7 @@
 # Semesta 1.0.0 signed release — 9 October 2026
 
+For the current English-only artifacts, see [signed release 1.0.1](RELEASE_VALIDATION_1.0.1.md).
+
 This is the historical validation record for the original 1.0.0 artifacts. The
 subsequent English-only source cleanup removes Spanish resources and GitHub Actions;
 it does not change those artifact hashes. Rebuild a new version to distribute the

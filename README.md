@@ -44,7 +44,7 @@ $releaseVersion = (Get-Content VERSION -Raw).Trim()
 
 Debug uses the standard Android debug key. Release builds require explicitly configured production signing; assembly never sends an APK automatically. See [configuration](docs/CONFIGURATION.md) for signing, Firebase, Google sign-in and release ownership.
 
-The configured release repository is [LeoAristocrat/Semesta](https://github.com/LeoAristocrat/Semesta). Update availability depends on releases actually being published there. First release version: `1.0.0`, recorded in `VERSION`. See [release and GitHub instructions](docs/RELEASING.md).
+The configured release repository is [LeoAristocrat/Semesta](https://github.com/LeoAristocrat/Semesta). Update availability depends on releases actually being published there. Current release version: `1.0.1`, recorded in `VERSION`. See [release and GitHub instructions](docs/RELEASING.md).
 
 ## Existing user migration
 

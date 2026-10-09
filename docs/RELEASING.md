@@ -2,7 +2,7 @@
 
 Repository: https://github.com/LeoAristocrat/Semesta
 
-The first Semesta release is **1.0.0** (`VERSION`). The local repository uses `main`
+The current Semesta release is **1.0.1** (`VERSION`). The local repository uses `main`
 and the confirmed repository URL as `origin`. Preparing the project does not push
 commits, publish a GitHub Release or upload signing secrets.
 
@@ -61,7 +61,7 @@ git config user.name "LeoAristocrat"
 git config user.email "sayeemlaskar786@gmail.com"
 git status
 git add -A
-git commit -m "chore: make Semesta English-only and remove GitHub Actions"
+git commit -m "chore: prepare Semesta 1.0.1 English-only release"
 git push origin main
 ```
 
@@ -84,6 +84,18 @@ For each new release, update `VERSION` and add its English notes to `CHANGELOG.m
 version code automatically; keep any explicit override higher than the published code.
 Build and verify with the existing signing key, commit the changes, create a new annotated tag, and push that tag manually. Do not
 move a tag or replace artifacts for an already published release.
+
+After committing the release source, tag that commit and push the tag manually:
+
+```powershell
+git tag -a v1.0.1 -m "Semesta 1.0.1: English-only release"
+git push origin v1.0.1
+```
+
+The locally prepared upload files are in `release-artifacts/1.0.1/`. Attach
+`Semesta-1.0.1.apk` and `SHA256SUMS.txt`; paste `release-notes.md` into the release
+description. Keep `mapping.txt` private for decoding crash reports. The AAB is for
+Play Console rather than direct installation from GitHub.
 
 In GitHub, open **Releases > Draft a new release**, choose the new tag and paste the
 corresponding English notes from `CHANGELOG.md`. Attach the matching signed APK and

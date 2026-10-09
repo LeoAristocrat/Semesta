@@ -35,7 +35,7 @@ This machine has the four values in ignored `local.properties`. The private key 
 | releaseKeyAlias | RELEASE_KEY_ALIAS |
 | releaseKeyPassword | RELEASE_KEY_PASSWORD |
 
-Release assembly and bundling reject missing signing configuration, default development credentials, an absent keystore, missing release notes or a missing explicit public version. Use `-PversionName=1.0.0` for this release. Debug builds use the normal debug key. The default local version is stable (`0.0.0-dev.local`); use `-PdevBuildLabel=<label>` for a distinct local artifact without changing release version ordering. Existing explicit distribution tasks remain available when configured; ordinary assembly does not invoke Telegram or publish externally.
+Release assembly and bundling reject missing signing configuration, default development credentials, an absent keystore, missing release notes or a missing explicit public version. Use `-PversionName=1.0.1` for this release, matching `VERSION`. Debug builds use the normal debug key. The default local version is stable (`0.0.0-dev.local`); use `-PdevBuildLabel=<label>` for a distinct local artifact without changing release version ordering. Existing explicit distribution tasks remain available when configured; ordinary assembly does not invoke Telegram or publish externally.
 
 ## Backup compatibility
 
